@@ -27,6 +27,7 @@ public class Game extends JPanel implements Runnable {
     private ControllerInput controller;
     private HappyBumpEffect happyFx;
     private PlayerSelectionManager selectionManager;
+    private SettingsMenu settingsMenu;
 
     private Set<Point> visibleTiles = new HashSet<>();
 
@@ -35,7 +36,6 @@ public class Game extends JPanel implements Runnable {
 
         maze = new MazeGenerator();
         player = new Player(2 * TILE + TILE / 2, 2 * TILE + TILE / 2);
-
         controller = new ControllerInput();
         happyFx = new HappyBumpEffect();
 
@@ -43,9 +43,12 @@ public class Game extends JPanel implements Runnable {
         playerImages = loader.loadImages("player", TILE);
         monsterImages = loader.loadImages("monsters", TILE);
 
-        if (!playerImages.isEmpty()) playerImg = playerImages.get(0);
+        if (!playerImages.isEmpty()) {
+            playerImg = playerImages.get(0);
+        }
 
         selectionManager = new PlayerSelectionManager(playerImages);
+        settingsMenu = new SettingsMenu();
 
         new Thread(this).start();
     }
@@ -66,11 +69,24 @@ public class Game extends JPanel implements Runnable {
     private void update() {
         controller.poll();
 
+        // Toggle settings menu with LT
+        if (controller.getLeftTrigger() > 0.7f) {
+            settingsMenu.toggleActive();
+        }
+
+        // Pause game updates if settings menu is active
+        if (settingsMenu.isActive()) {
+            settingsMenu.update(controller.getLX(), controller.getLY(), controller.getRightTrigger() > 0.7f);
+            return;
+        }
+
+        // Restart to player selection
         if (controller.getRightTrigger() > 0.7f) {
             restartToSelection();
             return;
         }
 
+        // Player selection
         if (selectingPlayer) {
             if (selectionManager.updateSelection(controller.getLX(), controller.getLY(), lastInputTime)) {
                 playerSelectionIndex = selectionManager.getSelectionIndex();
@@ -111,6 +127,7 @@ public class Game extends JPanel implements Runnable {
         double speed = 4;
         double dx = lx * speed;
         double dy = ly * speed;
+
         Rectangle nextPos = player.getBounds(player.x + dx, player.y + dy);
 
         if (!maze.isColliding(nextPos)) {
@@ -119,11 +136,14 @@ public class Game extends JPanel implements Runnable {
         } else {
             Rectangle nextX = player.getBounds(player.x + dx, player.y);
             Rectangle nextY = player.getBounds(player.x, player.y + dy);
+
             if (!maze.isColliding(nextX)) player.x += dx;
             if (!maze.isColliding(nextY)) player.y += dy;
         }
 
-        player.checkFootstep(); // trigger footstep once per tile
+        if (settingsMenu.areFootstepsEnabled()) {
+            player.checkFootstep(); // trigger footstep once per tile
+        }
     }
 
     private void restartToSelection() {
@@ -139,6 +159,7 @@ public class Game extends JPanel implements Runnable {
     private void checkVisibleTiles() {
         int screenCenterX = WIDTH * TILE / 2;
         int screenCenterY = HEIGHT * TILE / 2;
+
         double cameraX = player.x - screenCenterX;
         double cameraY = player.y - screenCenterY;
 
@@ -153,7 +174,10 @@ public class Game extends JPanel implements Runnable {
             for (int x = startX; x < endX; x++) {
                 Point p = new Point(x, y);
                 newVisible.add(p);
-                if (!visibleTiles.contains(p)) onTileEntered(p);
+
+                if (!visibleTiles.contains(p)) {
+                    onTileEntered(p);
+                }
             }
         }
 
@@ -169,29 +193,34 @@ public class Game extends JPanel implements Runnable {
         BufferedImage img = monsterImages.get(new java.util.Random().nextInt(monsterImages.size()));
         double mx = tile.x * TILE + TILE / 2;
         double my = tile.y * TILE + TILE / 2;
-        monster = new Monster(mx, my, img);
-    }
-private void updateMonster() {
-    if (monster == null) return;
 
-    if (Math.random() < 0.01) {
-        Point p = maze.randomCorridorFarFrom(monster.x, monster.y, 2);
-        if (p != null) monster.setTargetTile(p.x, p.y);
+        monster = new Monster(mx, my, img, settingsMenu);
     }
 
-    // Pass visibleTiles to monster
-    monster.update(maze, visibleTiles);
+    private void updateMonster() {
+        if (monster == null) return;
 
-    if (player.distance(monster.x, monster.y) < 32) {
-        happyFx.trigger(monster.x, monster.y);
-        monster = null;
-        return;
+        if (Math.random() < 0.01) {
+            Point p = maze.randomCorridorFarFrom(monster.x, monster.y, 2);
+            if (p != null) {
+                monster.setTargetTile(p.x, p.y);
+            }
+        }
+
+        // Pass visibleTiles to monster
+        monster.update(maze, visibleTiles);
+
+        if (player.distance(monster.x, monster.y) < 32) {
+            happyFx.trigger(monster.x, monster.y);
+            monster = null;
+            return;
+        }
+
+        if (player.distance(monster.x, monster.y) > TILE * 25) {
+            monster = null;
+        }
     }
 
-    if (player.distance(monster.x, monster.y) > TILE * 25) {
-        monster = null;
-    }
-}
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -199,7 +228,7 @@ private void updateMonster() {
 
         g2.setColor(Color.WHITE);
         g2.setFont(new Font("Arial", Font.PLAIN, 20));
-        g2.drawString("RT = Change Character", 20, 30);
+        g2.drawString("RT = Change Character | LT = Settings", 20, 30);
 
         if (selectingPlayer) {
             selectionManager.drawSelection(g2, getWidth(), getHeight(), TILE);
@@ -208,37 +237,45 @@ private void updateMonster() {
 
         int screenCenterX = WIDTH * TILE / 2;
         int screenCenterY = HEIGHT * TILE / 2;
+
         double cameraX = player.x - screenCenterX;
         double cameraY = player.y - screenCenterY;
 
-        for (int wy = (int)(cameraY/TILE)-1; wy < (int)(cameraY/TILE)+HEIGHT+1; wy++) {
-            for (int wx = (int)(cameraX/TILE)-1; wx < (int)(cameraX/TILE)+WIDTH+1; wx++) {
-                int sx = wx * TILE - (int)cameraX;
-                int sy = wy * TILE - (int)cameraY;
+        for (int wy = (int) (cameraY / TILE) - 1; wy < (int) (cameraY / TILE) + HEIGHT + 1; wy++) {
+            for (int wx = (int) (cameraX / TILE) - 1; wx < (int) (cameraX / TILE) + WIDTH + 1; wx++) {
+                int sx = wx * TILE - (int) cameraX;
+                int sy = wy * TILE - (int) cameraY;
+
                 g2.setColor(maze.isWallTile(wx, wy) ? Color.DARK_GRAY : Color.GRAY);
                 g2.fillRect(sx, sy, TILE, TILE);
             }
         }
 
         if (monster != null) {
-            int sx = (int)(monster.x - cameraX - monster.img.getWidth()/2);
-            int sy = (int)(monster.y - cameraY - monster.img.getHeight()/2);
+            int sx = (int) (monster.x - cameraX - monster.img.getWidth() / 2);
+            int sy = (int) (monster.y - cameraY - monster.img.getHeight() / 2);
             g2.drawImage(monster.img, sx, sy, null);
         }
 
         happyFx.draw(g2, cameraX, cameraY);
 
-        int playerScreenX = (int)(player.x - cameraX - playerImg.getWidth()/2);
-        int playerScreenY = (int)(player.y - cameraY - playerImg.getHeight()/2);
+        int playerScreenX = (int) (player.x - cameraX - playerImg.getWidth() / 2);
+        int playerScreenY = (int) (player.y - cameraY - playerImg.getHeight() / 2);
         g2.drawImage(playerImg, playerScreenX, playerScreenY, null);
+
+        if (settingsMenu.isActive()) {
+            settingsMenu.draw(g2, getWidth(), getHeight());
+        }
     }
 
     public static void main(String[] args) {
         JFrame f = new JFrame("Labyrinth");
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setUndecorated(true);
+
         GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         Game game = new Game();
+
         f.add(game);
         device.setFullScreenWindow(f);
         f.validate();

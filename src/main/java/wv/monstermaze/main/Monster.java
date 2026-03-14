@@ -17,10 +17,13 @@ public class Monster {
     private int lastTileX;
     private int lastTileY;
 
-    public Monster(double x, double y, BufferedImage img) {
+    private SettingsMenu settingsMenu; // reference to check footstep toggle
+
+    public Monster(double x, double y, BufferedImage img, SettingsMenu settingsMenu) {
         this.x = x;
         this.y = y;
         this.img = img;
+        this.settingsMenu = settingsMenu;
         this.targetTileX = (int) (x / Game.TILE);
         this.targetTileY = (int) (y / Game.TILE);
         this.lastTileX = (int)(x / Game.TILE);
@@ -63,7 +66,9 @@ public class Monster {
                 moved = true;
             }
 
-            if (moved && isVisible(visibleTiles)) checkFootstep();
+            if (moved && isVisible(visibleTiles) && settingsMenu.areFootstepsEnabled()) {
+                checkFootstep();
+            }
         }
     }
 
