@@ -8,14 +8,14 @@ public class Player {
     public double y;
     public final int size = Game.TILE / 2;
 
-    private int lastTileX;
-    private int lastTileY;
+    private double lastFootstepX;
+    private double lastFootstepY;
 
     public Player(double x, double y) {
         this.x = x;
         this.y = y;
-        this.lastTileX = (int)(x / Game.TILE);
-        this.lastTileY = (int)(y / Game.TILE);
+        this.lastFootstepX = x;
+        this.lastFootstepY = y;
     }
 
     public double distance(double ox, double oy) {
@@ -32,13 +32,13 @@ public class Player {
     }
 
     public void checkFootstep() {
-        int currentTileX = (int)(x / Game.TILE);
-        int currentTileY = (int)(y / Game.TILE);
+        double dx = x - lastFootstepX;
+        double dy = y - lastFootstepY;
 
-        if (currentTileX != lastTileX || currentTileY != lastTileY) {
-            FootstepSound.play(); // player sound
-            lastTileX = currentTileX;
-            lastTileY = currentTileY;
+        if (Math.sqrt(dx * dx + dy * dy) >= Game.TILE / 2.0) { // half-tile check
+            FootstepSound.play();
+            lastFootstepX = x;
+            lastFootstepY = y;
         }
     }
 

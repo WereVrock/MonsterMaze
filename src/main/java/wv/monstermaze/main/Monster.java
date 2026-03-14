@@ -14,8 +14,8 @@ public class Monster {
     private int targetTileY;
     private double speed = 1.5;
 
-    private int lastTileX;
-    private int lastTileY;
+    private double lastFootstepX;
+    private double lastFootstepY;
 
     private SettingsMenu settingsMenu; // reference to check footstep toggle
 
@@ -26,8 +26,8 @@ public class Monster {
         this.settingsMenu = settingsMenu;
         this.targetTileX = (int) (x / Game.TILE);
         this.targetTileY = (int) (y / Game.TILE);
-        this.lastTileX = (int)(x / Game.TILE);
-        this.lastTileY = (int)(y / Game.TILE);
+        this.lastFootstepX = x;
+        this.lastFootstepY = y;
     }
 
     public void setTargetTile(int tx, int ty) {
@@ -78,13 +78,13 @@ public class Monster {
     }
 
     private void checkFootstep() {
-        int currentTileX = (int)(x / Game.TILE);
-        int currentTileY = (int)(y / Game.TILE);
+        double dx = x - lastFootstepX;
+        double dy = y - lastFootstepY;
 
-        if (currentTileX != lastTileX || currentTileY != lastTileY) {
-            FootstepSound.play(); // monster sound
-            lastTileX = currentTileX;
-            lastTileY = currentTileY;
+        if (Math.sqrt(dx * dx + dy * dy) >= Game.TILE / 2.0) { // half-tile check
+            FootstepSound.play();
+            lastFootstepX = x;
+            lastFootstepY = y;
         }
     }
 
