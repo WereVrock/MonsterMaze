@@ -9,9 +9,13 @@ import java.util.*;
 
 public class Game extends JPanel implements Runnable {
 
-    public static final int TILE = 64;
-    public static final int WIDTH = 21;
-    public static final int HEIGHT = 15;
+    public static final int TILE = 96;
+
+    public static final int WIDTH =
+            Toolkit.getDefaultToolkit().getScreenSize().width / TILE;
+
+    public static final int HEIGHT =
+            Toolkit.getDefaultToolkit().getScreenSize().height / TILE;
 
     private Player player;
     private Monster monster;
@@ -36,7 +40,9 @@ public class Game extends JPanel implements Runnable {
 
     public Game() {
 
-        setPreferredSize(new Dimension(WIDTH * TILE, HEIGHT * TILE));
+        setPreferredSize(
+                Toolkit.getDefaultToolkit().getScreenSize()
+        );
 
         maze = new MazeGenerator();
 
@@ -195,6 +201,11 @@ public class Game extends JPanel implements Runnable {
 
         controller.poll();
 
+        if (controller.getRightTrigger() > 0.7f) {
+            restartToSelection();
+            return;
+        }
+
         if (selectingPlayer) {
             updatePlayerSelection();
             return;
@@ -255,6 +266,23 @@ public class Game extends JPanel implements Runnable {
                 monster = null;
             }
         }
+    }
+
+    private void restartToSelection() {
+
+        selectingPlayer = true;
+
+        maze = new MazeGenerator();
+
+        player = new Player(2 * TILE + TILE / 2, 2 * TILE + TILE / 2);
+
+        monster = null;
+
+        visibleTiles.clear();
+
+        happyFx = new HappyBumpEffect();
+
+        System.out.println("Restarting to player selection");
     }
 
     private void updatePlayerSelection() {
@@ -357,34 +385,38 @@ public class Game extends JPanel implements Runnable {
 
         Graphics2D g2 = (Graphics2D) g;
 
+        g2.setColor(Color.WHITE);
+        g2.setFont(new Font("Arial", Font.PLAIN, 20));
+        g2.drawString("RT = Change Character", 20, 30);
+
         if (selectingPlayer) {
 
             g2.setColor(Color.BLACK);
-            g2.fillRect(0,0,getWidth(),getHeight());
+            g2.fillRect(0, 0, getWidth(), getHeight());
 
             g2.setColor(Color.WHITE);
-            g2.setFont(new Font("Arial",Font.BOLD,36));
+            g2.setFont(new Font("Arial", Font.BOLD, 40));
 
-            g2.drawString("Choose Your Character", 300, 100);
+            g2.drawString("Choose Your Character", getWidth() / 2 - 220, 120);
 
-            int spacing = 200;
+            int spacing = TILE * 2;
 
-            int startX = getWidth()/2 - (playerImages.size()*spacing)/2;
+            int startX = getWidth() / 2 - (playerImages.size() * spacing) / 2;
 
-            for(int i=0;i<playerImages.size();i++){
+            for (int i = 0; i < playerImages.size(); i++) {
 
                 BufferedImage img = playerImages.get(i);
 
-                int x = startX + i*spacing;
-                int y = getHeight()/2;
+                int x = startX + i * spacing;
+                int y = getHeight() / 2;
 
-                if(i==playerSelectionIndex){
+                if (i == playerSelectionIndex) {
 
                     g2.setColor(Color.YELLOW);
-                    g2.drawRect(x-10,y-10,TILE+20,TILE+20);
+                    g2.drawRect(x - 10, y - 10, TILE + 20, TILE + 20);
                 }
 
-                g2.drawImage(img,x,y,null);
+                g2.drawImage(img, x, y, null);
             }
 
             return;
@@ -444,10 +476,18 @@ public class Game extends JPanel implements Runnable {
 
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        f.add(new Game());
+        f.setUndecorated(true);
 
-        f.pack();
+        GraphicsDevice device =
+                GraphicsEnvironment.getLocalGraphicsEnvironment()
+                        .getDefaultScreenDevice();
 
-        f.setVisible(true);
+        Game game = new Game();
+
+        f.add(game);
+
+        device.setFullScreenWindow(f);
+
+        f.validate();
     }
 }
