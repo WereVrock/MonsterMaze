@@ -21,6 +21,14 @@ public class Player {
 
     public Rectangle getBounds(double nextX, double nextY) {
         int half = size / 2;
-        return new Rectangle((int)(nextX - half), (int)(nextY - half), size, size);
+        // use floor for integer conversion to avoid rounding errors
+        int bx = (int) Math.floor(nextX - half);
+        int by = (int) Math.floor(nextY - half);
+        return new Rectangle(bx, by, size, size);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Player[x=%.2f, y=%.2f]", x, y);
     }
 }

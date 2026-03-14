@@ -46,17 +46,15 @@ public class MazeGenerator {
         return !corridor.contains(new Point(x, y));
     }
 
-    // Checks if any part of a rectangle collides with a wall
     public boolean isColliding(Rectangle r) {
-        int startX = r.x / Game.TILE;
-        int endX = (r.x + r.width - 1) / Game.TILE;
-        int startY = r.y / Game.TILE;
-        int endY = (r.y + r.height - 1) / Game.TILE;
+        int startX = (int) Math.floor((double) r.x / Game.TILE);
+        int startY = (int) Math.floor((double) r.y / Game.TILE);
+        int endX = (int) Math.floor((double) (r.x + r.width - 1) / Game.TILE);
+        int endY = (int) Math.floor((double) (r.y + r.height - 1) / Game.TILE);
 
         for (int tx = startX; tx <= endX; tx++) {
             for (int ty = startY; ty <= endY; ty++) {
-                if (isWallTile(tx, ty))
-                    return true;
+                if (isWallTile(tx, ty)) return true;
             }
         }
         return false;
