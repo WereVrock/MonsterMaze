@@ -171,30 +171,27 @@ public class Game extends JPanel implements Runnable {
         double my = tile.y * TILE + TILE / 2;
         monster = new Monster(mx, my, img);
     }
+private void updateMonster() {
+    if (monster == null) return;
 
-    private void updateMonster() {
-        if (monster == null) return;
-
-        if (Math.random() < 0.01) {
-            Point p = maze.randomCorridorFarFrom(monster.x, monster.y, 2);
-            if (p != null) {
-                monster.setTargetTile(p.x, p.y);
-            }
-        }
-
-        monster.update(maze); // footstep triggered inside Monster.update()
-
-        if (player.distance(monster.x, monster.y) < 32) {
-            happyFx.trigger(monster.x, monster.y);
-            monster = null;
-            return;
-        }
-
-        if (monster != null && player.distance(monster.x, monster.y) > TILE * 25) {
-            monster = null;
-        }
+    if (Math.random() < 0.01) {
+        Point p = maze.randomCorridorFarFrom(monster.x, monster.y, 2);
+        if (p != null) monster.setTargetTile(p.x, p.y);
     }
 
+    // Pass visibleTiles to monster
+    monster.update(maze, visibleTiles);
+
+    if (player.distance(monster.x, monster.y) < 32) {
+        happyFx.trigger(monster.x, monster.y);
+        monster = null;
+        return;
+    }
+
+    if (player.distance(monster.x, monster.y) > TILE * 25) {
+        monster = null;
+    }
+}
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);

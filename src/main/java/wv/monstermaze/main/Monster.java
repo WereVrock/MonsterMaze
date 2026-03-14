@@ -2,6 +2,7 @@ package wv.monstermaze.main;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.Set;
 
 public class Monster {
 
@@ -31,7 +32,7 @@ public class Monster {
         this.targetTileY = ty;
     }
 
-    public void update(MazeGenerator maze) {
+    public void update(MazeGenerator maze, Set<Point> visibleTiles) {
         double targetX = targetTileX * Game.TILE + Game.TILE / 2;
         double targetY = targetTileY * Game.TILE + Game.TILE / 2;
 
@@ -62,8 +63,13 @@ public class Monster {
                 moved = true;
             }
 
-            if (moved) checkFootstep();
+            if (moved && isVisible(visibleTiles)) checkFootstep();
         }
+    }
+
+    private boolean isVisible(Set<Point> visibleTiles) {
+        Point currentTile = new Point((int)(x / Game.TILE), (int)(y / Game.TILE));
+        return visibleTiles.contains(currentTile);
     }
 
     private void checkFootstep() {
@@ -75,5 +81,10 @@ public class Monster {
             lastTileX = currentTileX;
             lastTileY = currentTileY;
         }
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Monster[x=%.2f, y=%.2f]", x, y);
     }
 }
