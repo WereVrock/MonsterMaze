@@ -1,3 +1,4 @@
+// ===== ControllerInput.java =====
 package wv.monstermaze.main;
 
 import com.studiohartman.jamepad.ControllerManager;
@@ -20,11 +21,15 @@ public class ControllerInput {
         if (!state.isConnected) {
             lx = 0f;
             ly = 0f;
+            System.out.println("Controller not connected");
             return;
         }
 
         lx = state.leftStickX;
         ly = state.leftStickY;
+
+        // Print input
+        System.out.println("Left Stick X: " + lx + " | Left Stick Y: " + ly);
     }
 
     public float getLX() {
