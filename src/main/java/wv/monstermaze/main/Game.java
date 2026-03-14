@@ -47,12 +47,37 @@ public class Game extends JPanel implements Runnable {
 
             File folder = new File("monsters");
 
-            for (File f : folder.listFiles()) {
-
-                BufferedImage img = ImageIO.read(f);
-
-                monsterImages.add(scaleImage(img, TILE, TILE));
+            if (!folder.exists()) {
+                System.out.println("Monster folder not found: " + folder.getAbsolutePath());
+                return;
             }
+
+            File[] files = folder.listFiles();
+
+            if (files == null || files.length == 0) {
+                System.out.println("Monster folder empty.");
+                return;
+            }
+
+            for (File f : files) {
+
+                try {
+
+                    BufferedImage img = ImageIO.read(f);
+
+                    if (img != null) {
+
+                        monsterImages.add(scaleImage(img, TILE, TILE));
+
+                        System.out.println("Loaded monster image: " + f.getName());
+                    }
+
+                } catch (Exception e) {
+                    System.out.println("Failed loading: " + f.getName());
+                }
+            }
+
+            System.out.println("Total monster images loaded: " + monsterImages.size());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -193,7 +218,10 @@ public class Game extends JPanel implements Runnable {
 
         if (Math.random() > 0.05) return;
 
+        if (monsterImages.isEmpty()) return;
+
         BufferedImage img = monsterImages.get(new Random().nextInt(monsterImages.size()));
+        System.out.println("Monster images loaded: " + monsterImages.size());
 
         double mx = tile.x * TILE + TILE / 2;
         double my = tile.y * TILE + TILE / 2;

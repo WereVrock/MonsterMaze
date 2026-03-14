@@ -29,7 +29,7 @@ public class ControllerInput {
         ly = state.leftStickY;
 
         // Print input
-        System.out.println("Left Stick X: " + lx + " | Left Stick Y: " + ly);
+//        System.out.println("Left Stick X: " + lx + " | Left Stick Y: " + ly);
     }
 
     public float getLX() {
