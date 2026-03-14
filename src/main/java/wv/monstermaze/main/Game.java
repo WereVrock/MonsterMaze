@@ -22,13 +22,14 @@ public class Game extends JPanel implements Runnable {
 
     private ControllerInput controller;
 
+    private Set<Point> visibleTiles = new HashSet<>();
+
     public Game() {
 
         setPreferredSize(new Dimension(WIDTH * TILE, HEIGHT * TILE));
 
         maze = new MazeGenerator();
 
-        // Spawn player in the center of the 5x5 free area (tile 2,2)
         player = new Player(2 * TILE + TILE / 2, 2 * TILE + TILE / 2);
 
         loadImages();
@@ -99,20 +100,16 @@ public class Game extends JPanel implements Runnable {
 
     private void update() {
 
-        // Poll controller input
         controller.poll();
 
         double lx = controller.getLX();
         double ly = controller.getLY();
 
-        // Deadzone
         if (Math.abs(lx) < 0.15) lx = 0;
         if (Math.abs(ly) < 0.15) ly = 0;
 
-        // Invert Y axis
         ly = -ly;
 
-        // Normalize diagonal speed
         double len = Math.sqrt(lx * lx + ly * ly);
         if (len > 1) {
             lx /= len;
@@ -124,35 +121,32 @@ public class Game extends JPanel implements Runnable {
         double dx = lx * speed;
         double dy = ly * speed;
 
-        // Attempt full movement
         double newX = player.x + dx;
         double newY = player.y + dy;
         Rectangle nextPos = player.getBounds(newX, newY);
 
-        // Check collision
         if (!maze.isColliding(nextPos)) {
             player.x = newX;
             player.y = newY;
         } else {
-            // Attempt X-only movement
+
             Rectangle nextX = player.getBounds(player.x + dx, player.y);
             if (!maze.isColliding(nextX)) {
                 player.x += dx;
             }
-            // Attempt Y-only movement
+
             Rectangle nextY = player.getBounds(player.x, player.y + dy);
             if (!maze.isColliding(nextY)) {
                 player.y += dy;
             }
         }
 
-        // Ensure maze extends around player
         maze.ensureArea(player.x, player.y);
 
-        // Spawn monsters if needed
-        spawnMonster();
+        checkVisibleTiles();
 
-        // Handle player-monster collision
+        updateMonster();
+
         if (monster != null) {
             if (player.distance(monster.x, monster.y) < 32) {
                 monster = null;
@@ -160,19 +154,62 @@ public class Game extends JPanel implements Runnable {
         }
     }
 
-    private void spawnMonster() {
+    private void checkVisibleTiles() {
+
+        int screenCenterX = WIDTH * TILE / 2;
+        int screenCenterY = HEIGHT * TILE / 2;
+
+        double cameraX = player.x - screenCenterX;
+        double cameraY = player.y - screenCenterY;
+
+        int startX = (int) (cameraX / TILE) - 1;
+        int startY = (int) (cameraY / TILE) - 1;
+
+        int endX = startX + WIDTH + 2;
+        int endY = startY + HEIGHT + 2;
+
+        Set<Point> newVisible = new HashSet<>();
+
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+
+                Point p = new Point(x, y);
+                newVisible.add(p);
+
+                if (!visibleTiles.contains(p)) {
+                    onTileEntered(p);
+                }
+            }
+        }
+
+        visibleTiles = newVisible;
+    }
+
+    private void onTileEntered(Point tile) {
 
         if (monster != null) return;
 
-        if (Math.random() > 0.1) return;
+        if (maze.isWallTile(tile.x, tile.y)) return;
 
-        Point p = maze.randomCorridorFarFrom(player.x, player.y, 8);
-
-        if (p == null) return;
+        if (Math.random() > 0.05) return;
 
         BufferedImage img = monsterImages.get(new Random().nextInt(monsterImages.size()));
 
-        monster = new Monster(p.x * TILE + TILE / 2, p.y * TILE + TILE / 2, img);
+        double mx = tile.x * TILE + TILE / 2;
+        double my = tile.y * TILE + TILE / 2;
+
+        monster = new Monster(mx, my, img);
+    }
+
+    private void updateMonster() {
+
+        if (monster == null) return;
+
+        double maxDistance = TILE * 25;
+
+        if (player.distance(monster.x, monster.y) > maxDistance) {
+            monster = null;
+        }
     }
 
     @Override
