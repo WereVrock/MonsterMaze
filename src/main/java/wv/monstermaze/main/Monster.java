@@ -7,12 +7,14 @@ public class Monster {
 
     public double x;
     public double y;
-
     public BufferedImage img;
 
     private int targetTileX;
     private int targetTileY;
-    private double speed = 1.5; // pixels per frame
+    private double speed = 1.5;
+
+    private int lastTileX;
+    private int lastTileY;
 
     public Monster(double x, double y, BufferedImage img) {
         this.x = x;
@@ -20,6 +22,8 @@ public class Monster {
         this.img = img;
         this.targetTileX = (int) (x / Game.TILE);
         this.targetTileY = (int) (y / Game.TILE);
+        this.lastTileX = (int)(x / Game.TILE);
+        this.lastTileY = (int)(y / Game.TILE);
     }
 
     public void setTargetTile(int tx, int ty) {
@@ -40,21 +44,36 @@ public class Monster {
             x = targetX;
             y = targetY;
         } else {
-            // Normalize direction
             double nx = dx / dist * speed;
             double ny = dy / dist * speed;
 
-            // Check collision separately for X and Y like player
             Rectangle nextX = new Rectangle((int) (x + nx - Game.TILE / 4), (int) (y - Game.TILE / 4), Game.TILE / 2, Game.TILE / 2);
             Rectangle nextY = new Rectangle((int) (x - Game.TILE / 4), (int) (y + ny - Game.TILE / 4), Game.TILE / 2, Game.TILE / 2);
 
+            boolean moved = false;
+
             if (!maze.isColliding(nextX)) {
                 x += nx;
+                moved = true;
             }
 
             if (!maze.isColliding(nextY)) {
                 y += ny;
+                moved = true;
             }
+
+            if (moved) checkFootstep();
+        }
+    }
+
+    private void checkFootstep() {
+        int currentTileX = (int)(x / Game.TILE);
+        int currentTileY = (int)(y / Game.TILE);
+
+        if (currentTileX != lastTileX || currentTileY != lastTileY) {
+            FootstepSound.play(); // monster sound
+            lastTileX = currentTileX;
+            lastTileY = currentTileY;
         }
     }
 }

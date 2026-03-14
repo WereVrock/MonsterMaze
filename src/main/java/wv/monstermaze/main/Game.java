@@ -122,6 +122,8 @@ public class Game extends JPanel implements Runnable {
             if (!maze.isColliding(nextX)) player.x += dx;
             if (!maze.isColliding(nextY)) player.y += dy;
         }
+
+        player.checkFootstep(); // trigger footstep once per tile
     }
 
     private void restartToSelection() {
@@ -170,31 +172,28 @@ public class Game extends JPanel implements Runnable {
         monster = new Monster(mx, my, img);
     }
 
-private void updateMonster() {
-    if (monster == null) return;
+    private void updateMonster() {
+        if (monster == null) return;
 
-    // Make monster choose a new random target occasionally
-    if (Math.random() < 0.01) {
-        Point p = maze.randomCorridorFarFrom(monster.x, monster.y, 2);
-        if (p != null) {
-            monster.setTargetTile(p.x, p.y);
+        if (Math.random() < 0.01) {
+            Point p = maze.randomCorridorFarFrom(monster.x, monster.y, 2);
+            if (p != null) {
+                monster.setTargetTile(p.x, p.y);
+            }
+        }
+
+        monster.update(maze); // footstep triggered inside Monster.update()
+
+        if (player.distance(monster.x, monster.y) < 32) {
+            happyFx.trigger(monster.x, monster.y);
+            monster = null;
+            return;
+        }
+
+        if (monster != null && player.distance(monster.x, monster.y) > TILE * 25) {
+            monster = null;
         }
     }
-
-    monster.update(maze); // pass maze here
-
-    // Check bump
-    if (player.distance(monster.x, monster.y) < 32) {
-        happyFx.trigger(monster.x, monster.y);
-        monster = null;
-        return; // stop here to avoid further access
-    }
-
-    // Check distance despawn
-    if (monster != null && player.distance(monster.x, monster.y) > TILE * 25) {
-        monster = null;
-    }
-}
 
     @Override
     protected void paintComponent(Graphics g) {
