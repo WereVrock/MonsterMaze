@@ -22,7 +22,9 @@ public class HappyBumpEffect {
 
         Color color;
 
-        public Particle(double x,double y){
+        boolean smiley;
+
+        public Particle(double x, double y) {
 
             this.x = x;
             this.y = y;
@@ -35,7 +37,7 @@ public class HappyBumpEffect {
 
             life = 40 + Math.random() * 20;
 
-            size = 6 + (int)(Math.random()*8);
+            size = 10 + (int) (Math.random() * 10);
 
             Color[] palette = {
                 Color.YELLOW,
@@ -45,10 +47,12 @@ public class HappyBumpEffect {
                 Color.ORANGE
             };
 
-            color = palette[(int)(Math.random()*palette.length)];
+            color = palette[(int) (Math.random() * palette.length)];
+
+            smiley = Math.random() < 0.35;
         }
 
-        public void update(){
+        public void update() {
 
             x += vx;
             y += vy;
@@ -58,67 +62,96 @@ public class HappyBumpEffect {
             life--;
         }
 
-        public boolean dead(){
+        public boolean dead() {
             return life <= 0;
         }
     }
 
     private List<Particle> particles = new ArrayList<>();
 
-    public void trigger(double x,double y){
+    public void trigger(double x, double y) {
 
-        for(int i=0;i<20;i++){
-            particles.add(new Particle(x,y));
+        for (int i = 0; i < 20; i++) {
+            particles.add(new Particle(x, y));
         }
 
         playBoing();
     }
 
-    public void update(){
+    public void update() {
 
         Iterator<Particle> it = particles.iterator();
 
-        while(it.hasNext()){
+        while (it.hasNext()) {
 
             Particle p = it.next();
 
             p.update();
 
-            if(p.dead()){
+            if (p.dead()) {
                 it.remove();
             }
         }
     }
 
-    public void draw(Graphics2D g2,double cameraX,double cameraY){
+    public void draw(Graphics2D g2, double cameraX, double cameraY) {
 
-        for(Particle p : particles){
+        for (Particle p : particles) {
 
-            int sx = (int)(p.x - cameraX);
-            int sy = (int)(p.y - cameraY);
+            int sx = (int) (p.x - cameraX);
+            int sy = (int) (p.y - cameraY);
 
-            g2.setColor(p.color);
+            if (p.smiley) {
+                drawSmiley(g2, sx, sy, p.size);
+            } else {
 
-            g2.fillOval(
-                sx - p.size/2,
-                sy - p.size/2,
-                p.size,
-                p.size
-            );
+                g2.setColor(p.color);
+
+                g2.fillOval(
+                        sx - p.size / 2,
+                        sy - p.size / 2,
+                        p.size,
+                        p.size
+                );
+            }
         }
     }
 
-    private void playBoing(){
+    private void drawSmiley(Graphics2D g2, int x, int y, int size) {
+
+        int r = size / 2;
+
+        g2.setColor(Color.YELLOW);
+        g2.fillOval(x - r, y - r, size, size);
+
+        g2.setColor(Color.BLACK);
+
+        int eye = size / 6;
+
+        g2.fillOval(x - r / 2 - eye, y - r / 3, eye, eye);
+        g2.fillOval(x + r / 2 - eye, y - r / 3, eye, eye);
+
+        g2.drawArc(
+                x - r / 2,
+                y - r / 4,
+                r,
+                r,
+                200,
+                140
+        );
+    }
+
+    private void playBoing() {
 
         new Thread(() -> {
 
-            try{
+            try {
 
                 float sampleRate = 44100;
 
-                byte[] buf = new byte[(int)sampleRate];
+                byte[] buf = new byte[(int) sampleRate];
 
-                for(int i=0;i<buf.length;i++){
+                for (int i = 0; i < buf.length; i++) {
 
                     double t = i / sampleRate;
 
@@ -126,10 +159,10 @@ public class HappyBumpEffect {
 
                     double v = Math.sin(2 * Math.PI * freq * t);
 
-                    buf[i] = (byte)(v * 80);
+                    buf[i] = (byte) (v * 80);
                 }
 
-                AudioFormat af = new AudioFormat(sampleRate,8,1,true,false);
+                AudioFormat af = new AudioFormat(sampleRate, 8, 1, true, false);
 
                 SourceDataLine line = AudioSystem.getSourceDataLine(af);
 
@@ -137,13 +170,13 @@ public class HappyBumpEffect {
 
                 line.start();
 
-                line.write(buf,0,buf.length);
+                line.write(buf, 0, buf.length);
 
                 line.drain();
 
                 line.close();
 
-            }catch(Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 

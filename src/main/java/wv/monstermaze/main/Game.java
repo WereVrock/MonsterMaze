@@ -24,6 +24,8 @@ public class Game extends JPanel implements Runnable {
 
     private Set<Point> visibleTiles = new HashSet<>();
 
+    private HappyBumpEffect happyFx = new HappyBumpEffect();
+
     public Game() {
 
         setPreferredSize(new Dimension(WIDTH * TILE, HEIGHT * TILE));
@@ -172,8 +174,13 @@ public class Game extends JPanel implements Runnable {
 
         updateMonster();
 
+        happyFx.update();
+
         if (monster != null) {
             if (player.distance(monster.x, monster.y) < 32) {
+
+                happyFx.trigger(monster.x, monster.y);
+
                 monster = null;
             }
         }
@@ -286,6 +293,8 @@ public class Game extends JPanel implements Runnable {
 
             g2.drawImage(monster.img, sx, sy, null);
         }
+
+        happyFx.draw(g2, cameraX, cameraY);
 
         int playerScreenX = (int) (player.x - cameraX - playerImg.getWidth() / 2);
         int playerScreenY = (int) (player.y - cameraY - playerImg.getHeight() / 2);
