@@ -7,15 +7,22 @@ public class SettingsMenu {
     private boolean active = false;
     private boolean footstepsEnabled = true;
     private int selection = 0; // 0 = footsteps toggle, 1 = exit game
-    private long lastInputTime = 0;
+    private long lastInputTime = 0; // for up/down and confirm
+    private long lastToggleTime = 0; // for LT menu toggle cooldown
 
     public boolean isActive() {
         return active;
     }
 
     public void toggleActive() {
+        long now = System.currentTimeMillis();
+
+        // Enforce 1-second cooldown before toggling again
+        if (now - lastToggleTime < 1000) return;
+
         active = !active;
-        lastInputTime = System.currentTimeMillis();
+        lastToggleTime = now; // record toggle time
+        lastInputTime = now;  // reset menu navigation cooldown
     }
 
     public boolean areFootstepsEnabled() {
