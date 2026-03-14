@@ -18,13 +18,21 @@ public class Game extends JPanel implements Runnable {
     private MazeGenerator maze;
 
     private BufferedImage playerImg;
+    private java.util.List<BufferedImage> playerImages = new ArrayList<>();
+
     private java.util.List<BufferedImage> monsterImages = new ArrayList<>();
+
+    private int playerSelectionIndex = 0;
+
+    private boolean selectingPlayer = true;
 
     private ControllerInput controller;
 
     private Set<Point> visibleTiles = new HashSet<>();
 
     private HappyBumpEffect happyFx = new HappyBumpEffect();
+
+    private long lastInputTime = 0;
 
     public Game() {
 
@@ -45,7 +53,65 @@ public class Game extends JPanel implements Runnable {
 
         try {
 
-            playerImg = scaleImage(ImageIO.read(new File("player.png")), TILE, TILE);
+            loadPlayerImages();
+
+            loadMonsterImages();
+
+            if (!playerImages.isEmpty()) {
+                playerImg = playerImages.get(0);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadPlayerImages() {
+
+        try {
+
+            File folder = new File("player");
+
+            if (!folder.exists()) {
+                System.out.println("Player folder not found: " + folder.getAbsolutePath());
+                return;
+            }
+
+            File[] files = folder.listFiles();
+
+            if (files == null || files.length == 0) {
+                System.out.println("Player folder empty.");
+                return;
+            }
+
+            for (File f : files) {
+
+                try {
+
+                    BufferedImage img = ImageIO.read(f);
+
+                    if (img != null) {
+
+                        playerImages.add(scaleImage(img, TILE, TILE));
+
+                        System.out.println("Loaded player image: " + f.getName());
+                    }
+
+                } catch (Exception e) {
+                    System.out.println("Failed loading: " + f.getName());
+                }
+            }
+
+            System.out.println("Total player images loaded: " + playerImages.size());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadMonsterImages() {
+
+        try {
 
             File folder = new File("monsters");
 
@@ -129,6 +195,11 @@ public class Game extends JPanel implements Runnable {
 
         controller.poll();
 
+        if (selectingPlayer) {
+            updatePlayerSelection();
+            return;
+        }
+
         double lx = controller.getLX();
         double ly = controller.getLY();
 
@@ -186,6 +257,39 @@ public class Game extends JPanel implements Runnable {
         }
     }
 
+    private void updatePlayerSelection() {
+
+        double lx = controller.getLX();
+
+        long now = System.currentTimeMillis();
+
+        if (now - lastInputTime < 200) return;
+
+        if (lx > 0.5) {
+            playerSelectionIndex++;
+            lastInputTime = now;
+        }
+
+        if (lx < -0.5) {
+            playerSelectionIndex--;
+            lastInputTime = now;
+        }
+
+        if (playerSelectionIndex < 0) playerSelectionIndex = playerImages.size() - 1;
+        if (playerSelectionIndex >= playerImages.size()) playerSelectionIndex = 0;
+
+        double ly = controller.getLY();
+
+        if (Math.abs(ly) > 0.8) {
+
+            playerImg = playerImages.get(playerSelectionIndex);
+
+            selectingPlayer = false;
+
+            System.out.println("Player selected: " + playerSelectionIndex);
+        }
+    }
+
     private void checkVisibleTiles() {
 
         int screenCenterX = WIDTH * TILE / 2;
@@ -228,7 +332,6 @@ public class Game extends JPanel implements Runnable {
         if (monsterImages.isEmpty()) return;
 
         BufferedImage img = monsterImages.get(new Random().nextInt(monsterImages.size()));
-        System.out.println("Monster images loaded: " + monsterImages.size());
 
         double mx = tile.x * TILE + TILE / 2;
         double my = tile.y * TILE + TILE / 2;
@@ -253,6 +356,39 @@ public class Game extends JPanel implements Runnable {
         super.paintComponent(g);
 
         Graphics2D g2 = (Graphics2D) g;
+
+        if (selectingPlayer) {
+
+            g2.setColor(Color.BLACK);
+            g2.fillRect(0,0,getWidth(),getHeight());
+
+            g2.setColor(Color.WHITE);
+            g2.setFont(new Font("Arial",Font.BOLD,36));
+
+            g2.drawString("Choose Your Character", 300, 100);
+
+            int spacing = 200;
+
+            int startX = getWidth()/2 - (playerImages.size()*spacing)/2;
+
+            for(int i=0;i<playerImages.size();i++){
+
+                BufferedImage img = playerImages.get(i);
+
+                int x = startX + i*spacing;
+                int y = getHeight()/2;
+
+                if(i==playerSelectionIndex){
+
+                    g2.setColor(Color.YELLOW);
+                    g2.drawRect(x-10,y-10,TILE+20,TILE+20);
+                }
+
+                g2.drawImage(img,x,y,null);
+            }
+
+            return;
+        }
 
         int screenCenterX = WIDTH * TILE / 2;
         int screenCenterY = HEIGHT * TILE / 2;
