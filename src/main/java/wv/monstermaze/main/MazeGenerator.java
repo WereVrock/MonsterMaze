@@ -13,8 +13,15 @@ public class MazeGenerator {
     private Random rand = new Random();
 
     public MazeGenerator() {
-        corridor.add(new Point(0, 0));
-        corridor.add(new Point(1, 0));
+        // Create initial 5x5 free area at top-left
+        for (int x = 0; x < 5; x++) {
+            for (int y = 0; y < 5; y++) {
+                corridor.add(new Point(x, y));
+            }
+        }
+        // Start maze generation from the edge of the free area
+        cx = 4;
+        cy = 2;
     }
 
     public void ensureArea(double px, double py) {
