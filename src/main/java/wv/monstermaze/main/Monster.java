@@ -27,6 +27,8 @@ public class Monster {
     private double flipProgress = 0;
     private double flipSpeed = 0.08;
 
+    private boolean joker;
+
     public Monster(double x, double y, BufferedImage img, SettingsMenu settingsMenu) {
 
         this.x = x;
@@ -39,6 +41,12 @@ public class Monster {
 
         this.lastFootstepX = x;
         this.lastFootstepY = y;
+
+        joker =Math.random() < 0.20;
+
+        if (joker) {
+            speed = 8;
+        }
     }
 
     public void setTargetTile(int tx, int ty) {
@@ -74,6 +82,10 @@ public class Monster {
     public void update(MazeGenerator maze, Set<Point> visibleTiles, float stickX, float stickY) {
 
         updateFlip();
+
+        if (joker && Math.random() < 0.01) {
+            triggerFlip();
+        }
 
         double sx = stickX;
         double sy = -stickY;
