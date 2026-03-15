@@ -11,11 +11,25 @@ public class Player {
     private double lastFootstepX;
     private double lastFootstepY;
 
+    private SpeedBoost speedBoost = new SpeedBoost();
+
     public Player(double x, double y) {
         this.x = x;
         this.y = y;
         this.lastFootstepX = x;
         this.lastFootstepY = y;
+    }
+
+    public void update(){
+        speedBoost.update();
+    }
+
+    public double getSpeedMultiplier(){
+        return speedBoost.getMultiplier();
+    }
+
+    public void triggerSpeedBoost(double mult,int seconds){
+        speedBoost.trigger(mult,seconds);
     }
 
     public double distance(double ox, double oy) {
@@ -35,7 +49,7 @@ public class Player {
         double dx = x - lastFootstepX;
         double dy = y - lastFootstepY;
 
-        if (Math.sqrt(dx * dx + dy * dy) >= Game.TILE / 2.0) { // half-tile check
+        if (Math.sqrt(dx * dx + dy * dy) >= Game.TILE / 2.0) {
             FootstepSound.play();
             lastFootstepX = x;
             lastFootstepY = y;

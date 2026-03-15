@@ -8,7 +8,6 @@ import java.util.Set;
 
 public class Game extends JPanel implements Runnable {
 
-
 public static final int TILE = 96;
 public static final int WIDTH = Toolkit.getDefaultToolkit().getScreenSize().width / TILE;
 public static final int HEIGHT = Toolkit.getDefaultToolkit().getScreenSize().height / TILE;
@@ -34,6 +33,8 @@ private Set<Point> visibleTiles = new HashSet<>();
 
 private ToiletManager toilets = new ToiletManager();
 private PoopBar poopBar = new PoopBar();
+
+private boolean wasOnToilet = false;
 
 public Game() {
 
@@ -80,6 +81,8 @@ private void update() {
 
     controller.poll();
 
+    player.update();
+
     if (settingsMenu.isToiletSystemEnabled()) {
         poopBar.update();
     }
@@ -121,15 +124,30 @@ private void update() {
 
     if (settingsMenu.isToiletSystemEnabled()) {
 
+        boolean onToilet = toilets.isPlayerOnToilet(player);
+
         if (controller.isXPressed()) {
 
-            if (toilets.isPlayerOnToilet(player)) {
+            if (onToilet) {
 
-                if (poopBar.isGreen() || poopBar.isRed()) {
+                if (poopBar.isGreen()) {
+
+                    PoopSound.play();
+                    player.triggerSpeedBoost(1.8,10);
+                    poopBar.reset();
+
+                } else if (poopBar.isRed()) {
+
+                    PoopSound.play();
+                    player.triggerSpeedBoost(1.35,10);
                     poopBar.reset();
                 }
             }
         }
+
+      
+
+       
     }
 
     updateMonster();
@@ -157,7 +175,7 @@ private void updatePlayerMovement() {
         ly /= len;
     }
 
-    double speed = 4;
+    double speed = 4 * player.getSpeedMultiplier();
 
     double dx = lx * speed;
     double dy = ly * speed;
@@ -364,6 +382,4 @@ public static void main(String[] args) {
 
     f.validate();
 }
-
-
 }
