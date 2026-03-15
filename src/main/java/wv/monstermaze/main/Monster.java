@@ -12,6 +12,7 @@ public class Monster {
 
     private int targetTileX;
     private int targetTileY;
+
     private double speed = 1.5;
 
     private double lastFootstepX;
@@ -21,13 +22,21 @@ public class Monster {
 
     private static final double STICK_THRESHOLD = 0.2;
 
+    private boolean flipped = false;
+    private boolean flipping = false;
+    private double flipProgress = 0;
+    private double flipSpeed = 0.08;
+
     public Monster(double x, double y, BufferedImage img, SettingsMenu settingsMenu) {
+
         this.x = x;
         this.y = y;
         this.img = img;
         this.settingsMenu = settingsMenu;
+
         this.targetTileX = (int) (x / Game.TILE);
         this.targetTileY = (int) (y / Game.TILE);
+
         this.lastFootstepX = x;
         this.lastFootstepY = y;
     }
@@ -37,7 +46,34 @@ public class Monster {
         this.targetTileY = ty;
     }
 
+    public void triggerFlip() {
+
+        if (!flipping) {
+            flipping = true;
+            flipProgress = 0;
+        }
+    }
+
+    public double getFlipScale() {
+
+        if (!flipping) {
+            return flipped ? -1 : 1;
+        }
+
+        double scale;
+
+        if (flipProgress < 0.5) {
+            scale = 1 - flipProgress * 2;
+        } else {
+            scale = (flipProgress - 0.5) * 2;
+        }
+
+        return flipped ? -scale : scale;
+    }
+
     public void update(MazeGenerator maze, Set<Point> visibleTiles, float stickX, float stickY) {
+
+        updateFlip();
 
         double sx = stickX;
         double sy = -stickY;
@@ -53,9 +89,26 @@ public class Monster {
         aiMove(maze, visibleTiles);
     }
 
+    private void updateFlip() {
+
+        if (!flipping) return;
+
+        flipProgress += flipSpeed;
+
+        if (flipProgress >= 0.5 && flipProgress - flipSpeed < 0.5) {
+            flipped = !flipped;
+        }
+
+        if (flipProgress >= 1) {
+            flipProgress = 0;
+            flipping = false;
+        }
+    }
+
     private void manualMove(MazeGenerator maze, Set<Point> visibleTiles, double sx, double sy) {
 
         double len = Math.sqrt(sx * sx + sy * sy);
+
         if (len > 1) {
             sx /= len;
             sy /= len;
@@ -66,8 +119,19 @@ public class Monster {
         double nx = sx * moveSpeed;
         double ny = sy * moveSpeed;
 
-        Rectangle nextX = new Rectangle((int) (x + nx - Game.TILE / 4), (int) (y - Game.TILE / 4), Game.TILE / 2, Game.TILE / 2);
-        Rectangle nextY = new Rectangle((int) (x - Game.TILE / 4), (int) (y + ny - Game.TILE / 4), Game.TILE / 2, Game.TILE / 2);
+        Rectangle nextX = new Rectangle(
+                (int) (x + nx - Game.TILE / 4),
+                (int) (y - Game.TILE / 4),
+                Game.TILE / 2,
+                Game.TILE / 2
+        );
+
+        Rectangle nextY = new Rectangle(
+                (int) (x - Game.TILE / 4),
+                (int) (y + ny - Game.TILE / 4),
+                Game.TILE / 2,
+                Game.TILE / 2
+        );
 
         boolean moved = false;
 
@@ -97,14 +161,28 @@ public class Monster {
         double dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < speed) {
+
             x = targetX;
             y = targetY;
+
         } else {
+
             double nx = dx / dist * speed;
             double ny = dy / dist * speed;
 
-            Rectangle nextX = new Rectangle((int) (x + nx - Game.TILE / 4), (int) (y - Game.TILE / 4), Game.TILE / 2, Game.TILE / 2);
-            Rectangle nextY = new Rectangle((int) (x - Game.TILE / 4), (int) (y + ny - Game.TILE / 4), Game.TILE / 2, Game.TILE / 2);
+            Rectangle nextX = new Rectangle(
+                    (int) (x + nx - Game.TILE / 4),
+                    (int) (y - Game.TILE / 4),
+                    Game.TILE / 2,
+                    Game.TILE / 2
+            );
+
+            Rectangle nextY = new Rectangle(
+                    (int) (x - Game.TILE / 4),
+                    (int) (y + ny - Game.TILE / 4),
+                    Game.TILE / 2,
+                    Game.TILE / 2
+            );
 
             boolean moved = false;
 
@@ -125,16 +203,20 @@ public class Monster {
     }
 
     private boolean isVisible(Set<Point> visibleTiles) {
-        Point currentTile = new Point((int)(x / Game.TILE), (int)(y / Game.TILE));
+
+        Point currentTile = new Point((int) (x / Game.TILE), (int) (y / Game.TILE));
         return visibleTiles.contains(currentTile);
     }
 
     private void checkFootstep() {
+
         double dx = x - lastFootstepX;
         double dy = y - lastFootstepY;
 
         if (Math.sqrt(dx * dx + dy * dy) >= Game.TILE / 2.0) {
+
             FootstepSound.play();
+
             lastFootstepX = x;
             lastFootstepY = y;
         }

@@ -58,6 +58,7 @@ public class Game extends JPanel implements Runnable {
         while (true) {
             update();
             repaint();
+
             try {
                 Thread.sleep(16);
             } catch (Exception e) {
@@ -67,42 +68,48 @@ public class Game extends JPanel implements Runnable {
     }
 
     private void update() {
+
         controller.poll();
 
-        // Toggle settings menu with LT
         if (controller.getLeftTrigger() > 0.7f) {
             settingsMenu.toggleActive();
         }
 
-        // Pause game updates if settings menu is active
         if (settingsMenu.isActive()) {
             settingsMenu.update(controller.getLX(), controller.getLY(), controller.getRightTrigger() > 0.7f);
             return;
         }
 
-        // Restart to player selection
         if (controller.getRightTrigger() > 0.7f) {
             restartToSelection();
             return;
         }
 
-        // Player selection
         if (selectingPlayer) {
+
             if (selectionManager.updateSelection(controller.getLX(), controller.getLY(), lastInputTime)) {
+
                 playerSelectionIndex = selectionManager.getSelectionIndex();
                 playerImg = playerImages.get(playerSelectionIndex);
                 selectingPlayer = false;
+
                 System.out.println("Player selected: " + playerSelectionIndex);
+
             } else {
                 lastInputTime = System.currentTimeMillis();
             }
+
             return;
         }
 
         updatePlayerMovement();
+
         maze.ensureArea(player.x, player.y);
+
         checkVisibleTiles();
+
         updateMonster();
+
         happyFx.update();
 
         if (monster != null && player.distance(monster.x, monster.y) < 32) {
@@ -112,6 +119,7 @@ public class Game extends JPanel implements Runnable {
     }
 
     private void updatePlayerMovement() {
+
         double lx = controller.getLX();
         double ly = -controller.getLY();
 
@@ -119,21 +127,26 @@ public class Game extends JPanel implements Runnable {
         if (Math.abs(ly) < 0.15) ly = 0;
 
         double len = Math.sqrt(lx * lx + ly * ly);
+
         if (len > 1) {
             lx /= len;
             ly /= len;
         }
 
         double speed = 4;
+
         double dx = lx * speed;
         double dy = ly * speed;
 
         Rectangle nextPos = player.getBounds(player.x + dx, player.y + dy);
 
         if (!maze.isColliding(nextPos)) {
+
             player.x += dx;
             player.y += dy;
+
         } else {
+
             Rectangle nextX = player.getBounds(player.x + dx, player.y);
             Rectangle nextY = player.getBounds(player.x, player.y + dy);
 
@@ -142,21 +155,27 @@ public class Game extends JPanel implements Runnable {
         }
 
         if (settingsMenu.areFootstepsEnabled()) {
-            player.checkFootstep(); // trigger footstep once per tile
+            player.checkFootstep();
         }
     }
 
     private void restartToSelection() {
+
         selectingPlayer = true;
+
         maze = new MazeGenerator();
         player = new Player(2 * TILE + TILE / 2, 2 * TILE + TILE / 2);
         monster = null;
+
         visibleTiles.clear();
+
         happyFx = new HappyBumpEffect();
+
         System.out.println("Restarting to player selection");
     }
 
     private void checkVisibleTiles() {
+
         int screenCenterX = WIDTH * TILE / 2;
         int screenCenterY = HEIGHT * TILE / 2;
 
@@ -165,6 +184,7 @@ public class Game extends JPanel implements Runnable {
 
         int startX = (int) (cameraX / TILE) - 1;
         int startY = (int) (cameraY / TILE) - 1;
+
         int endX = startX + WIDTH + 2;
         int endY = startY + HEIGHT + 2;
 
@@ -172,6 +192,7 @@ public class Game extends JPanel implements Runnable {
 
         for (int y = startY; y < endY; y++) {
             for (int x = startX; x < endX; x++) {
+
                 Point p = new Point(x, y);
                 newVisible.add(p);
 
@@ -185,12 +206,14 @@ public class Game extends JPanel implements Runnable {
     }
 
     private void onTileEntered(Point tile) {
+
         if (monster != null) return;
         if (maze.isWallTile(tile.x, tile.y)) return;
         if (Math.random() > 0.05) return;
         if (monsterImages.isEmpty()) return;
 
         BufferedImage img = monsterImages.get(new java.util.Random().nextInt(monsterImages.size()));
+
         double mx = tile.x * TILE + TILE / 2;
         double my = tile.y * TILE + TILE / 2;
 
@@ -198,17 +221,23 @@ public class Game extends JPanel implements Runnable {
     }
 
     private void updateMonster() {
+
         if (monster == null) return;
 
+        if (controller.isXPressedController2()) {
+            monster.triggerFlip();
+        }
+
         if (Math.random() < 0.01) {
+
             Point p = maze.randomCorridorFarFrom(monster.x, monster.y, 2);
+
             if (p != null) {
                 monster.setTargetTile(p.x, p.y);
             }
         }
 
-        // Pass visibleTiles to monster
-       monster.update(maze, visibleTiles, controller.getLX2(), controller.getLY2());
+        monster.update(maze, visibleTiles, controller.getLX2(), controller.getLY2());
 
         if (player.distance(monster.x, monster.y) < 32) {
             happyFx.trigger(monster.x, monster.y);
@@ -223,7 +252,9 @@ public class Game extends JPanel implements Runnable {
 
     @Override
     protected void paintComponent(Graphics g) {
+
         super.paintComponent(g);
+
         Graphics2D g2 = (Graphics2D) g;
 
         g2.setColor(Color.WHITE);
@@ -243,6 +274,7 @@ public class Game extends JPanel implements Runnable {
 
         for (int wy = (int) (cameraY / TILE) - 1; wy < (int) (cameraY / TILE) + HEIGHT + 1; wy++) {
             for (int wx = (int) (cameraX / TILE) - 1; wx < (int) (cameraX / TILE) + WIDTH + 1; wx++) {
+
                 int sx = wx * TILE - (int) cameraX;
                 int sy = wy * TILE - (int) cameraY;
 
@@ -252,15 +284,29 @@ public class Game extends JPanel implements Runnable {
         }
 
         if (monster != null) {
-            int sx = (int) (monster.x - cameraX - monster.img.getWidth() / 2);
-            int sy = (int) (monster.y - cameraY - monster.img.getHeight() / 2);
-            g2.drawImage(monster.img, sx, sy, null);
+
+            double scaleX = monster.getFlipScale();
+
+            Graphics2D gFlip = (Graphics2D) g2.create();
+
+            gFlip.translate(monster.x - cameraX, monster.y - cameraY);
+            gFlip.scale(scaleX, 1);
+
+            gFlip.drawImage(
+                    monster.img,
+                    -monster.img.getWidth() / 2,
+                    -monster.img.getHeight() / 2,
+                    null
+            );
+
+            gFlip.dispose();
         }
 
         happyFx.draw(g2, cameraX, cameraY);
 
         int playerScreenX = (int) (player.x - cameraX - playerImg.getWidth() / 2);
         int playerScreenY = (int) (player.y - cameraY - playerImg.getHeight() / 2);
+
         g2.drawImage(playerImg, playerScreenX, playerScreenY, null);
 
         if (settingsMenu.isActive()) {
@@ -269,15 +315,19 @@ public class Game extends JPanel implements Runnable {
     }
 
     public static void main(String[] args) {
+
         JFrame f = new JFrame("Labyrinth");
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setUndecorated(true);
 
         GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+
         Game game = new Game();
 
         f.add(game);
+
         device.setFullScreenWindow(f);
+
         f.validate();
     }
 }

@@ -10,13 +10,14 @@ public class ControllerInput {
     // Controller 1
     private float lx;
     private float ly;
-
     private float leftTrigger;
     private float rightTrigger;
 
     // Controller 2
     private float lx2;
     private float ly2;
+    private boolean xPressed2;
+    private boolean lastX2;
 
     public ControllerInput() {
         controllers = new ControllerManager();
@@ -36,7 +37,6 @@ public class ControllerInput {
         } else {
             lx = state.leftStickX;
             ly = state.leftStickY;
-
             leftTrigger = state.leftTrigger;
             rightTrigger = state.rightTrigger;
         }
@@ -47,9 +47,15 @@ public class ControllerInput {
         if (!state2.isConnected) {
             lx2 = 0f;
             ly2 = 0f;
+            xPressed2 = false;
         } else {
             lx2 = state2.leftStickX;
             ly2 = state2.leftStickY;
+
+            boolean currentX = state2.x;
+
+            xPressed2 = currentX && !lastX2;
+            lastX2 = currentX;
         }
     }
 
@@ -75,6 +81,10 @@ public class ControllerInput {
 
     public float getLY2() {
         return ly2;
+    }
+
+    public boolean isXPressedController2() {
+        return xPressed2;
     }
 
     public void quit() {
