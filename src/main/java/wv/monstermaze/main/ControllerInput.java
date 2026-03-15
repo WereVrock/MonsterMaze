@@ -7,11 +7,16 @@ public class ControllerInput {
 
     private ControllerManager controllers;
 
+    // Controller 1
     private float lx;
     private float ly;
 
     private float leftTrigger;
     private float rightTrigger;
+
+    // Controller 2
+    private float lx2;
+    private float ly2;
 
     public ControllerInput() {
         controllers = new ControllerManager();
@@ -20,6 +25,7 @@ public class ControllerInput {
 
     public void poll() {
 
+        // ===== Controller 1 =====
         ControllerState state = controllers.getState(0);
 
         if (!state.isConnected) {
@@ -27,16 +33,24 @@ public class ControllerInput {
             ly = 0f;
             leftTrigger = 0f;
             rightTrigger = 0f;
+        } else {
+            lx = state.leftStickX;
+            ly = state.leftStickY;
 
-            System.out.println("Controller not connected");
-            return;
+            leftTrigger = state.leftTrigger;
+            rightTrigger = state.rightTrigger;
         }
 
-        lx = state.leftStickX;
-        ly = state.leftStickY;
+        // ===== Controller 2 =====
+        ControllerState state2 = controllers.getState(1);
 
-        leftTrigger = state.leftTrigger;
-        rightTrigger = state.rightTrigger;
+        if (!state2.isConnected) {
+            lx2 = 0f;
+            ly2 = 0f;
+        } else {
+            lx2 = state2.leftStickX;
+            ly2 = state2.leftStickY;
+        }
     }
 
     public float getLX() {
@@ -53,6 +67,14 @@ public class ControllerInput {
 
     public float getRightTrigger() {
         return rightTrigger;
+    }
+
+    public float getLX2() {
+        return lx2;
+    }
+
+    public float getLY2() {
+        return ly2;
     }
 
     public void quit() {

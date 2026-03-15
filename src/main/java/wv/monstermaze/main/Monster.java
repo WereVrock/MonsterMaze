@@ -17,7 +17,9 @@ public class Monster {
     private double lastFootstepX;
     private double lastFootstepY;
 
-    private SettingsMenu settingsMenu; // reference to check footstep toggle
+    private SettingsMenu settingsMenu;
+
+    private static final double STICK_THRESHOLD = 0.2;
 
     public Monster(double x, double y, BufferedImage img, SettingsMenu settingsMenu) {
         this.x = x;
@@ -35,7 +37,57 @@ public class Monster {
         this.targetTileY = ty;
     }
 
-    public void update(MazeGenerator maze, Set<Point> visibleTiles) {
+    public void update(MazeGenerator maze, Set<Point> visibleTiles, float stickX, float stickY) {
+
+        double sx = stickX;
+        double sy = -stickY;
+
+        if (Math.abs(sx) < STICK_THRESHOLD) sx = 0;
+        if (Math.abs(sy) < STICK_THRESHOLD) sy = 0;
+
+        if (sx != 0 || sy != 0) {
+            manualMove(maze, visibleTiles, sx, sy);
+            return;
+        }
+
+        aiMove(maze, visibleTiles);
+    }
+
+    private void manualMove(MazeGenerator maze, Set<Point> visibleTiles, double sx, double sy) {
+
+        double len = Math.sqrt(sx * sx + sy * sy);
+        if (len > 1) {
+            sx /= len;
+            sy /= len;
+        }
+
+        double moveSpeed = speed * 3;
+
+        double nx = sx * moveSpeed;
+        double ny = sy * moveSpeed;
+
+        Rectangle nextX = new Rectangle((int) (x + nx - Game.TILE / 4), (int) (y - Game.TILE / 4), Game.TILE / 2, Game.TILE / 2);
+        Rectangle nextY = new Rectangle((int) (x - Game.TILE / 4), (int) (y + ny - Game.TILE / 4), Game.TILE / 2, Game.TILE / 2);
+
+        boolean moved = false;
+
+        if (!maze.isColliding(nextX)) {
+            x += nx;
+            moved = true;
+        }
+
+        if (!maze.isColliding(nextY)) {
+            y += ny;
+            moved = true;
+        }
+
+        if (moved && isVisible(visibleTiles) && settingsMenu.areFootstepsEnabled()) {
+            checkFootstep();
+        }
+    }
+
+    private void aiMove(MazeGenerator maze, Set<Point> visibleTiles) {
+
         double targetX = targetTileX * Game.TILE + Game.TILE / 2;
         double targetY = targetTileY * Game.TILE + Game.TILE / 2;
 
@@ -81,7 +133,7 @@ public class Monster {
         double dx = x - lastFootstepX;
         double dy = y - lastFootstepY;
 
-        if (Math.sqrt(dx * dx + dy * dy) >= Game.TILE / 2.0) { // half-tile check
+        if (Math.sqrt(dx * dx + dy * dy) >= Game.TILE / 2.0) {
             FootstepSound.play();
             lastFootstepX = x;
             lastFootstepY = y;

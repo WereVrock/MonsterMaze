@@ -208,7 +208,7 @@ public class Game extends JPanel implements Runnable {
         }
 
         // Pass visibleTiles to monster
-        monster.update(maze, visibleTiles);
+       monster.update(maze, visibleTiles, controller.getLX2(), controller.getLY2());
 
         if (player.distance(monster.x, monster.y) < 32) {
             happyFx.trigger(monster.x, monster.y);
