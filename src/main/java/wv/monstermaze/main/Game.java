@@ -340,7 +340,7 @@ protected void paintComponent(Graphics g) {
     g2.drawImage(playerImg, playerScreenX, playerScreenY, null);
 
     if (settingsMenu.isToiletSystemEnabled()) {
-        poopBar.draw(g2, getWidth());
+        poopBar.draw(g2, getWidth(), toilets.isPlayerOnToilet(player));
     }
 
     if (settingsMenu.isActive()) {

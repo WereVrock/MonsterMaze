@@ -81,11 +81,11 @@ public class PoopBar {
     }
 
     public boolean isGreen() {
-        return value >= 0.30 && value <= 0.85;
+        return value >= 0.30 && value <= 0.80;
     }
 
     public boolean isRed() {
-        return value > 0.85;
+        return value > 0.80;
     }
 
     public boolean isGray() {
@@ -97,7 +97,7 @@ public class PoopBar {
         greenTriggered = false;
     }
 
-    public void draw(Graphics2D g2, int screenW) {
+    public void draw(Graphics2D g2, int screenW, boolean playerOnToilet) {
 
         int w = 400;
         int h = 34;
@@ -106,7 +106,7 @@ public class PoopBar {
         int y = 40;
 
         int grayEnd = (int)(w * 0.30);
-        int greenEnd = (int)(w * 0.85);
+        int greenEnd = (int)(w * 0.80);
 
         int fillWidth = (int)(w * value);
 
@@ -143,9 +143,9 @@ public class PoopBar {
 
         if (poopImg != null && value >= 0.30) {
 
-            int iconW = poopImg.getWidth();
+            int spacing = poopImg.getWidth() + 12;
 
-            for (int px = x + grayEnd; px < x + fillWidth; px += iconW) {
+            for (int px = x + grayEnd; px < x + fillWidth; px += spacing) {
 
                 double offset = Math.sin(wiggleTime + px * 0.05) * 3;
 
@@ -167,6 +167,20 @@ public class PoopBar {
             if (isRed() && flash) {
                 g2.drawImage(toiletImg, x + w + 10, y, null);
             }
+        }
+
+        if (playerOnToilet && (isGreen() || isRed())) {
+
+            int bx = screenW / 2 - 30;
+            int by = y + 60;
+
+            g2.setColor(new Color(40,120,255));
+            g2.fillRoundRect(bx, by, 60, 60, 16, 16);
+
+            g2.setColor(Color.WHITE);
+            g2.setStroke(new BasicStroke(5));
+            g2.drawLine(bx + 16, by + 16, bx + 44, by + 44);
+            g2.drawLine(bx + 44, by + 16, bx + 16, by + 44);
         }
     }
 }
