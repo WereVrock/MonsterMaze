@@ -7,132 +7,166 @@ import java.io.File;
 
 public class PoopBar {
 
-private double value = 0;
-private long lastTime = System.currentTimeMillis();
+    private double value = 0;
+    private long lastTime = System.currentTimeMillis();
 
-private boolean flash;
-private long lastFlashTime = 0;
-private final long FLASH_INTERVAL = 400;
+    private boolean flash;
+    private long lastFlashTime = 0;
+    private final long FLASH_INTERVAL = 400;
 
-private boolean greenTriggered = false;
+    private boolean greenTriggered = false;
 
-private BufferedImage poopImg;
-private BufferedImage toiletImg;
+    private BufferedImage poopImg;
+    private BufferedImage toiletImg;
 
-public PoopBar() {
+    private double wiggleTime = 0;
 
-    try {
+    public PoopBar() {
 
-        poopImg = ImageIO.read(new File("ui/poop.png"));
-        toiletImg = ImageIO.read(new File("ui/toilet.png"));
+        try {
 
-        poopImg = scale(poopImg, 32, 32);
-        toiletImg = scale(toiletImg, 32, 32);
+            poopImg = ImageIO.read(new File("ui/poop.png"));
+            toiletImg = ImageIO.read(new File("ui/toilet.png"));
 
-    } catch (Exception e) {
+            poopImg = scale(poopImg, 28, 28);
+            toiletImg = scale(toiletImg, 32, 32);
 
-        System.out.println("UI icons missing in /ui folder");
+        } catch (Exception e) {
+
+            System.out.println("UI icons missing in /ui folder");
+        }
     }
-}
 
-private BufferedImage scale(BufferedImage img, int w, int h) {
+    private BufferedImage scale(BufferedImage img, int w, int h) {
 
-    BufferedImage scaled = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage scaled = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 
-    Graphics2D g = scaled.createGraphics();
-    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-    g.drawImage(img, 0, 0, w, h, null);
-    g.dispose();
+        Graphics2D g = scaled.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g.drawImage(img, 0, 0, w, h, null);
+        g.dispose();
 
-    return scaled;
-}
+        return scaled;
+    }
 
-public void update() {
+    public void update() {
 
-    long now = System.currentTimeMillis();
-    double dt = (now - lastTime) / 1000.0;
-    lastTime = now;
+        long now = System.currentTimeMillis();
+        double dt = (now - lastTime) / 1000.0;
+        lastTime = now;
 
-    value += dt * 0.02;
+        value += dt * 0.02;
+        if (value > 1) value = 1;
 
-    if (value > 1) value = 1;
+        wiggleTime += dt * 6;
 
-    if (now - lastFlashTime > FLASH_INTERVAL) {
+        if (now - lastFlashTime > FLASH_INTERVAL) {
 
-        flash = !flash;
-        lastFlashTime = now;
+            flash = !flash;
+            lastFlashTime = now;
 
-        if (isRed() && flash) {
+            if (isRed() && flash) {
+                ToiletAlertSound.play();
+            }
+        }
+
+        if (isGreen() && !greenTriggered) {
+            greenTriggered = true;
             ToiletAlertSound.play();
         }
+
+        if (isGray()) {
+            greenTriggered = false;
+        }
     }
 
-    if (isGreen() && !greenTriggered) {
-        greenTriggered = true;
-        ToiletAlertSound.play();
+    public boolean isGreen() {
+        return value >= 0.30 && value <= 0.85;
     }
 
-    if (isGray()) {
+    public boolean isRed() {
+        return value > 0.85;
+    }
+
+    public boolean isGray() {
+        return value < 0.30;
+    }
+
+    public void reset() {
+        value = 0;
         greenTriggered = false;
     }
-}
 
-public boolean isGreen() {
-    return value >= 0.30 && value <= 0.85;
-}
+    public void draw(Graphics2D g2, int screenW) {
 
-public boolean isRed() {
-    return value > 0.85;
-}
+        int w = 400;
+        int h = 34;
 
-public boolean isGray() {
-    return value < 0.30;
-}
+        int x = screenW / 2 - w / 2;
+        int y = 40;
 
-public void reset() {
-    value = 0;
-    greenTriggered = false;
-}
+        int grayEnd = (int)(w * 0.30);
+        int greenEnd = (int)(w * 0.85);
 
-public void draw(Graphics2D g2, int screenW) {
+        int fillWidth = (int)(w * value);
 
-    int w = 400;
-    int h = 30;
+        Color darkGray = new Color(40,40,40);
+        Color lightGray = new Color(120,120,120);
+        Color softGreen = new Color(70,140,90);
+        Color softRed = new Color(170,70,70);
 
-    int x = screenW / 2 - w / 2;
-    int y = 40;
+        g2.setColor(darkGray);
+        g2.fillRect(x, y, grayEnd, h);
 
-    int fill = (int)(w * value);
+        g2.setColor(softGreen);
+        g2.fillRect(x + grayEnd, y, greenEnd - grayEnd, h);
 
-    g2.setColor(Color.GRAY);
-    g2.fillRect(x, y, (int)(w * 0.30), h);
+        g2.setColor(softRed);
+        g2.fillRect(x + greenEnd, y, w - greenEnd, h);
 
-    g2.setColor(Color.GREEN);
-    g2.fillRect(x + (int)(w * 0.30), y, (int)(w * 0.55), h);
+        if (fillWidth > 0) {
 
-    g2.setColor(Color.RED);
-    g2.fillRect(x + (int)(w * 0.85), y, (int)(w * 0.15), h);
+            if (fillWidth <= grayEnd) {
 
-    g2.setColor(Color.WHITE);
-    g2.drawRect(x, y, w, h);
+                g2.setColor(lightGray);
+                g2.fillRect(x, y, fillWidth, h);
 
-    g2.setColor(new Color(255, 220, 0));
-    g2.fillRect(x, y, fill, h);
+            } else {
 
-    if (poopImg != null) {
-        g2.drawImage(poopImg, x - 40, y - 2, null);
-    }
-
-    if (toiletImg != null) {
-
-        if (isGreen()) {
-            g2.drawImage(toiletImg, x + w + 10, y - 2, null);
+                g2.setColor(lightGray);
+                g2.fillRect(x, y, grayEnd, h);
+            }
         }
 
-        if (isRed() && flash) {
-            g2.drawImage(toiletImg, x + w + 10, y - 2, null);
+        g2.setColor(new Color(220,220,220));
+        g2.drawRect(x, y, w, h);
+
+        if (poopImg != null && value >= 0.30) {
+
+            int iconW = poopImg.getWidth();
+
+            for (int px = x + grayEnd; px < x + fillWidth; px += iconW) {
+
+                double offset = Math.sin(wiggleTime + px * 0.05) * 3;
+
+                g2.drawImage(
+                        poopImg,
+                        px,
+                        (int)(y + h/2 - poopImg.getHeight()/2 + offset),
+                        null
+                );
+            }
+        }
+
+        if (toiletImg != null) {
+
+            if (isGreen()) {
+                g2.drawImage(toiletImg, x + w + 10, y, null);
+            }
+
+            if (isRed() && flash) {
+                g2.drawImage(toiletImg, x + w + 10, y, null);
+            }
         }
     }
-}
-
 }
