@@ -7,10 +7,14 @@ import java.io.File;
 
 public class PoopBar {
 
-
 private double value = 0;
 private long lastTime = System.currentTimeMillis();
+
 private boolean flash;
+private long lastFlashTime = 0;
+private final long FLASH_INTERVAL = 400;
+
+private boolean greenTriggered = false;
 
 private BufferedImage poopImg;
 private BufferedImage toiletImg;
@@ -53,7 +57,24 @@ public void update() {
 
     if (value > 1) value = 1;
 
-    flash = !flash;
+    if (now - lastFlashTime > FLASH_INTERVAL) {
+
+        flash = !flash;
+        lastFlashTime = now;
+
+        if (isRed() && flash) {
+            ToiletAlertSound.play();
+        }
+    }
+
+    if (isGreen() && !greenTriggered) {
+        greenTriggered = true;
+        ToiletAlertSound.play();
+    }
+
+    if (isGray()) {
+        greenTriggered = false;
+    }
 }
 
 public boolean isGreen() {
@@ -70,6 +91,7 @@ public boolean isGray() {
 
 public void reset() {
     value = 0;
+    greenTriggered = false;
 }
 
 public void draw(Graphics2D g2, int screenW) {
@@ -112,6 +134,5 @@ public void draw(Graphics2D g2, int screenW) {
         }
     }
 }
-
 
 }
