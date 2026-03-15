@@ -31,15 +31,21 @@ public class Game extends JPanel implements Runnable {
 
     private Set<Point> visibleTiles = new HashSet<>();
 
+    private ToiletManager toilets = new ToiletManager();
+    private PoopBar poopBar = new PoopBar();
+
     public Game() {
+
         setPreferredSize(Toolkit.getDefaultToolkit().getScreenSize());
 
         maze = new MazeGenerator();
         player = new Player(2 * TILE + TILE / 2, 2 * TILE + TILE / 2);
+
         controller = new ControllerInput();
         happyFx = new HappyBumpEffect();
 
         ImageLoader loader = new ImageLoader();
+
         playerImages = loader.loadImages("player", TILE);
         monsterImages = loader.loadImages("monsters", TILE);
 
@@ -55,7 +61,9 @@ public class Game extends JPanel implements Runnable {
 
     @Override
     public void run() {
+
         while (true) {
+
             update();
             repaint();
 
@@ -70,6 +78,8 @@ public class Game extends JPanel implements Runnable {
     private void update() {
 
         controller.poll();
+
+        poopBar.update();
 
         if (controller.getLeftTrigger() > 0.7f) {
             settingsMenu.toggleActive();
@@ -93,8 +103,6 @@ public class Game extends JPanel implements Runnable {
                 playerImg = playerImages.get(playerSelectionIndex);
                 selectingPlayer = false;
 
-                System.out.println("Player selected: " + playerSelectionIndex);
-
             } else {
                 lastInputTime = System.currentTimeMillis();
             }
@@ -107,6 +115,16 @@ public class Game extends JPanel implements Runnable {
         maze.ensureArea(player.x, player.y);
 
         checkVisibleTiles();
+
+        if (controller.isXPressed()) {
+
+            if (toilets.isPlayerOnToilet(player)) {
+
+                if (poopBar.isGreen() || poopBar.isRed()) {
+                    poopBar.reset();
+                }
+            }
+        }
 
         updateMonster();
 
@@ -170,8 +188,8 @@ public class Game extends JPanel implements Runnable {
         visibleTiles.clear();
 
         happyFx = new HappyBumpEffect();
-
-        System.out.println("Restarting to player selection");
+        toilets = new ToiletManager();
+        poopBar = new PoopBar();
     }
 
     private void checkVisibleTiles() {
@@ -197,6 +215,8 @@ public class Game extends JPanel implements Runnable {
                 newVisible.add(p);
 
                 if (!visibleTiles.contains(p)) {
+
+                    toilets.onTileGenerated(x, y, maze);
                     onTileEntered(p);
                 }
             }
@@ -257,10 +277,6 @@ public class Game extends JPanel implements Runnable {
 
         Graphics2D g2 = (Graphics2D) g;
 
-        g2.setColor(Color.WHITE);
-        g2.setFont(new Font("Arial", Font.PLAIN, 20));
-        g2.drawString("RT = Change Character | LT = Settings", 20, 30);
-
         if (selectingPlayer) {
             selectionManager.drawSelection(g2, getWidth(), getHeight(), TILE);
             return;
@@ -282,6 +298,8 @@ public class Game extends JPanel implements Runnable {
                 g2.fillRect(sx, sy, TILE, TILE);
             }
         }
+
+        toilets.draw(g2, cameraX, cameraY);
 
         if (monster != null) {
 
@@ -308,6 +326,8 @@ public class Game extends JPanel implements Runnable {
         int playerScreenY = (int) (player.y - cameraY - playerImg.getHeight() / 2);
 
         g2.drawImage(playerImg, playerScreenX, playerScreenY, null);
+
+        poopBar.draw(g2, getWidth());
 
         if (settingsMenu.isActive()) {
             settingsMenu.draw(g2, getWidth(), getHeight());

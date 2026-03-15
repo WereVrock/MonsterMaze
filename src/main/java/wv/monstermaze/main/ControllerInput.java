@@ -13,6 +13,9 @@ public class ControllerInput {
     private float leftTrigger;
     private float rightTrigger;
 
+    private boolean xPressed;
+    private boolean lastX;
+
     // Controller 2
     private float lx2;
     private float ly2;
@@ -30,25 +33,37 @@ public class ControllerInput {
         ControllerState state = controllers.getState(0);
 
         if (!state.isConnected) {
+
             lx = 0f;
             ly = 0f;
             leftTrigger = 0f;
             rightTrigger = 0f;
+            xPressed = false;
+
         } else {
+
             lx = state.leftStickX;
             ly = state.leftStickY;
             leftTrigger = state.leftTrigger;
             rightTrigger = state.rightTrigger;
+
+            boolean currentX = state.x;
+
+            xPressed = currentX && !lastX;
+            lastX = currentX;
         }
 
         // ===== Controller 2 =====
         ControllerState state2 = controllers.getState(1);
 
         if (!state2.isConnected) {
+
             lx2 = 0f;
             ly2 = 0f;
             xPressed2 = false;
+
         } else {
+
             lx2 = state2.leftStickX;
             ly2 = state2.leftStickY;
 
@@ -73,6 +88,10 @@ public class ControllerInput {
 
     public float getRightTrigger() {
         return rightTrigger;
+    }
+
+    public boolean isXPressed() {
+        return xPressed;
     }
 
     public float getLX2() {
