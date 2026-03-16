@@ -19,7 +19,7 @@ public class FootstepSound {
                 double baseVolume = 0.3; // ~30% volume
 
                 // Slight difference for left/right
-                double footVolume = leftFoot ? baseVolume : baseVolume * 0.8;
+                double footVolume = leftFoot ? baseVolume : baseVolume * 0.5;
                 leftFoot = !leftFoot;
 
                 for (int i = 0; i < length; i++) {

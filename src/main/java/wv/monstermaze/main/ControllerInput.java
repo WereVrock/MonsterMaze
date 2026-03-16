@@ -3,11 +3,16 @@ package wv.monstermaze.main;
 import com.studiohartman.jamepad.ControllerManager;
 import com.studiohartman.jamepad.ControllerState;
 
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
+import java.awt.event.KeyEvent;
+import java.util.HashSet;
+import java.util.Set;
+
 public class ControllerInput {
 
     private ControllerManager controllers;
 
-    // Controller 1
     private float lx;
     private float ly;
     private float leftTrigger;
@@ -16,62 +21,127 @@ public class ControllerInput {
     private boolean xPressed;
     private boolean lastX;
 
-    // Controller 2
     private float lx2;
     private float ly2;
     private boolean xPressed2;
     private boolean lastX2;
 
+    private static final Set<Integer> keys = new HashSet<>();
+
     public ControllerInput() {
+
         controllers = new ControllerManager();
         controllers.initSDLGamepad();
+
+        KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                .addKeyEventDispatcher(new KeyEventDispatcher() {
+
+                    @Override
+                    public boolean dispatchKeyEvent(KeyEvent e) {
+
+                        synchronized (keys) {
+
+                            if (e.getID() == KeyEvent.KEY_PRESSED) {
+                                keys.add(e.getKeyCode());
+                            }
+
+                            if (e.getID() == KeyEvent.KEY_RELEASED) {
+                                keys.remove(e.getKeyCode());
+                            }
+                        }
+
+                        return false;
+                    }
+                });
     }
 
     public void poll() {
 
-        // ===== Controller 1 =====
         ControllerState state = controllers.getState(0);
 
-        if (!state.isConnected) {
+        float controllerLX = 0f;
+        float controllerLY = 0f;
+        float controllerLT = 0f;
+        float controllerRT = 0f;
+        boolean controllerX = false;
 
-            lx = 0f;
-            ly = 0f;
-            leftTrigger = 0f;
-            rightTrigger = 0f;
-            xPressed = false;
+        if (state.isConnected) {
 
-        } else {
-
-            lx = state.leftStickX;
-            ly = state.leftStickY;
-            leftTrigger = state.leftTrigger;
-            rightTrigger = state.rightTrigger;
-
-            boolean currentX = state.x;
-
-            xPressed = currentX && !lastX;
-            lastX = currentX;
+            controllerLX = state.leftStickX;
+            controllerLY = state.leftStickY;
+            controllerLT = state.leftTrigger;
+            controllerRT = state.rightTrigger;
+            controllerX = state.x;
         }
 
-        // ===== Controller 2 =====
+        float keyLX = 0f;
+        float keyLY = 0f;
+        float keyLT = 0f;
+        float keyRT = 0f;
+        boolean keyX = false;
+
+        synchronized (keys) {
+
+            if (keys.contains(KeyEvent.VK_A)) keyLX -= 1f;
+            if (keys.contains(KeyEvent.VK_D)) keyLX += 1f;
+
+            // FIXED Y AXIS
+            if (keys.contains(KeyEvent.VK_W)) keyLY += 1f;
+            if (keys.contains(KeyEvent.VK_S)) keyLY -= 1f;
+
+            if (keys.contains(KeyEvent.VK_Q)) keyLT = 1f;
+            if (keys.contains(KeyEvent.VK_E)) keyRT = 1f;
+
+            if (keys.contains(KeyEvent.VK_SPACE)) keyX = true;
+        }
+
+        lx = Math.abs(controllerLX) > Math.abs(keyLX) ? controllerLX : keyLX;
+        ly = Math.abs(controllerLY) > Math.abs(keyLY) ? controllerLY : keyLY;
+
+        leftTrigger = Math.max(controllerLT, keyLT);
+        rightTrigger = Math.max(controllerRT, keyRT);
+
+        boolean currentX = controllerX || keyX;
+
+        xPressed = currentX && !lastX;
+        lastX = currentX;
+
         ControllerState state2 = controllers.getState(1);
 
-        if (!state2.isConnected) {
+        float controllerLX2 = 0f;
+        float controllerLY2 = 0f;
+        boolean controllerX2 = false;
 
-            lx2 = 0f;
-            ly2 = 0f;
-            xPressed2 = false;
+        if (state2.isConnected) {
 
-        } else {
-
-            lx2 = state2.leftStickX;
-            ly2 = state2.leftStickY;
-
-            boolean currentX = state2.x;
-
-            xPressed2 = currentX && !lastX2;
-            lastX2 = currentX;
+            controllerLX2 = state2.leftStickX;
+            controllerLY2 = state2.leftStickY;
+            controllerX2 = state2.x;
         }
+
+        float keyLX2 = 0f;
+        float keyLY2 = 0f;
+        boolean keyX2 = false;
+
+        synchronized (keys) {
+
+            if (keys.contains(KeyEvent.VK_LEFT)) keyLX2 -= 1f;
+            if (keys.contains(KeyEvent.VK_RIGHT)) keyLX2 += 1f;
+
+            // FIXED Y AXIS
+            if (keys.contains(KeyEvent.VK_UP)) keyLY2 += 1f;
+            if (keys.contains(KeyEvent.VK_DOWN)) keyLY2 -= 1f;
+
+            if (keys.contains(KeyEvent.VK_ENTER)) keyX2 = true;
+        }
+
+        lx2 = Math.abs(controllerLX2) > Math.abs(keyLX2) ? controllerLX2 : keyLX2;
+        ly2 = Math.abs(controllerLY2) > Math.abs(keyLY2) ? controllerLY2 : keyLY2;
+
+        boolean currentX2 = controllerX2 || keyX2;
+
+        xPressed2 = currentX2 && !lastX2;
+        lastX2 = currentX2;
     }
 
     public float getLX() {
