@@ -12,6 +12,7 @@ public class Player {
     private double lastFootstepY;
 
     private SpeedBoost speedBoost = new SpeedBoost();
+    private PlayerFreeze freeze = new PlayerFreeze();
 
     public Player(double x, double y) {
         this.x = x;
@@ -22,6 +23,14 @@ public class Player {
 
     public void update(){
         speedBoost.update();
+    }
+
+    public boolean isFrozen(){
+        return freeze.isFrozen();
+    }
+
+    public void freeze(double seconds){
+        freeze.trigger(seconds);
     }
 
     public double getSpeedMultiplier(){

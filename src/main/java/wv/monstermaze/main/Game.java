@@ -36,6 +36,8 @@ private PoopBar poopBar = new PoopBar();
 
 private boolean wasOnToilet = false;
 
+private SpeedEffectVFX speedFx = new SpeedEffectVFX();
+
 public Game() {
 
     setPreferredSize(Toolkit.getDefaultToolkit().getScreenSize());
@@ -82,6 +84,15 @@ private void update() {
     controller.poll();
 
     player.update();
+
+    speedFx.update();
+
+    if(player.getSpeedMultiplier() > 1.0){
+
+        boolean high = player.getSpeedMultiplier() > 1.5;
+
+        speedFx.spawnBoostTrail(player.x,player.y,high);
+    }
 
     if (settingsMenu.isToiletSystemEnabled()) {
         poopBar.update();
@@ -130,24 +141,26 @@ private void update() {
 
             if (onToilet) {
 
+                player.freeze(2);
+
+                speedFx.triggerToiletBurst(player.x,player.y);
+
                 if (poopBar.isGreen()) {
 
                     PoopSound.play();
-                    player.triggerSpeedBoost(1.8,10);
+                    player.triggerSpeedBoost(1.8,15);
                     poopBar.reset();
 
                 } else if (poopBar.isRed()) {
 
                     PoopSound.play();
-                    player.triggerSpeedBoost(1.35,10);
+                    player.triggerSpeedBoost(1.35,15);
                     poopBar.reset();
                 }
             }
         }
 
-      
-
-       
+        wasOnToilet = onToilet;
     }
 
     updateMonster();
@@ -161,6 +174,8 @@ private void update() {
 }
 
 private void updatePlayerMovement() {
+
+    if(player.isFrozen()) return;
 
     double lx = controller.getLX();
     double ly = -controller.getLY();
@@ -215,6 +230,8 @@ private void restartToSelection() {
 
     toilets = new ToiletManager();
     poopBar = new PoopBar();
+
+    speedFx = new SpeedEffectVFX();
 }
 
 private void checkVisibleTiles() {
@@ -351,6 +368,8 @@ protected void paintComponent(Graphics g) {
     }
 
     happyFx.draw(g2, cameraX, cameraY);
+
+    speedFx.draw(g2,cameraX,cameraY);
 
     int playerScreenX = (int) (player.x - cameraX - playerImg.getWidth() / 2);
     int playerScreenY = (int) (player.y - cameraY - playerImg.getHeight() / 2);
