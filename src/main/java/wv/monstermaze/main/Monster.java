@@ -45,7 +45,7 @@ public class Monster {
     double jokerChance = vip ? 0.6 : 0.2;
     double drillerChance = vip ? 0.15 : 0.05;
 
-    double swapperChance = vip ? 0.30 : 0.10;
+    double swapperChance = vip ? 0.20 : 0.05;
 
     this.joker = Math.random() < jokerChance;
     if (this.joker) {
@@ -54,7 +54,7 @@ public class Monster {
 
     this.driller = Math.random() < drillerChance;
     this.swapper = Math.random() < swapperChance;
-    this.swapper=true;
+    
 }
 
     public void update(Game game) {
