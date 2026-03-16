@@ -25,7 +25,7 @@ public class PoopSound {
                     return;
                 }
 
-                BoostedAudioDevice device = new BoostedAudioDevice(2.5f);
+                BoostedAudioDevice device = new BoostedAudioDevice(5f);
                 AdvancedPlayer player = new AdvancedPlayer(is, device);
 
                 player.play();
