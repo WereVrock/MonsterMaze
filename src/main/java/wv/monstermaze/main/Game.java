@@ -42,7 +42,7 @@ public class Game extends JPanel implements Runnable {
     private double cameraY;
     private double cameraZoom = 1.0;
 
-    private MonsterSpawner monsterSpawner;
+    public MonsterSpawner monsterSpawner;
 
     public Game() {
         setPreferredSize(Toolkit.getDefaultToolkit().getScreenSize());
