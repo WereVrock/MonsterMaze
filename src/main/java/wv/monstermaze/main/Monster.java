@@ -88,26 +88,29 @@ public class Monster {
         if (swapper) trySwapWithPlayer(game);
     }
 
-    private void trySwapWithPlayer(Game game) {
+ private void trySwapWithPlayer(Game game) {
 
-        if (random.nextDouble() > 0.003) return;
+    if (random.nextDouble() > 0.003) return;
 
-        if (!isVisible(game.getVisibleTiles())) return;
+    if (!isVisible(game.getVisibleTiles())) return;
 
-        Player player = game.getPlayer();
+    Player player = game.getPlayer();
 
-        double px = player.x;
-        double py = player.y;
+    double px = player.x;
+    double py = player.y;
 
-        player.x = this.x;
-        player.y = this.y;
+    game.monsterSpawner.triggerTeleport(player.x, player.y);
+    game.monsterSpawner.triggerTeleport(this.x, this.y);
 
-        this.x = px;
-        this.y = py;
+    player.x = this.x;
+    player.y = this.y;
 
-        targetTileX = (int)(x / Game.TILE);
-        targetTileY = (int)(y / Game.TILE);
-    }
+    this.x = px;
+    this.y = py;
+
+    targetTileX = (int)(x / Game.TILE);
+    targetTileY = (int)(y / Game.TILE);
+}
 
     public void draw(Graphics2D g2, double cameraX, double cameraY) {
         double scaleX = getFlipScale();

@@ -16,6 +16,7 @@ public class MonsterSpawner {
 
     private final Set<Point> knownVisibleTiles = new java.util.HashSet<>();
     private final DrillWallEffect drillEffect = new DrillWallEffect();
+    private final TeleportSwapFX teleportFX = new TeleportSwapFX();
 
     public MonsterSpawner(Game game, ImageLoader.MonsterImagePool pool) {
         this.game = game;
@@ -24,18 +25,27 @@ public class MonsterSpawner {
     }
 
     public List<Monster> getMonsters() { return monsters; }
+
     public void triggerDrillEffect(double x, double y) { drillEffect.trigger(x, y); }
 
+    public void triggerTeleport(double x,double y){
+        teleportFX.trigger(x,y);
+        TeleportSound.play();
+    }
+
     public void updateMonsters(HappyBumpEffect happyFx) {
+
         detectNewVisibleTiles();
 
         List<Monster> toRemove = new ArrayList<>();
         Player player = game.getPlayer();
 
         for (Monster m : monsters) {
+
             m.update(game);
 
             double distanceToPlayer = m.distance(player.x, player.y);
+
             if (distanceToPlayer < 32) {
                 happyFx.trigger(m.getX(), m.getY());
                 toRemove.add(m);
@@ -48,37 +58,58 @@ public class MonsterSpawner {
         }
 
         monsters.removeAll(toRemove);
+
         drillEffect.update();
+        teleportFX.update();
     }
 
     public void drawMonsters(Graphics2D g2, double cameraX, double cameraY) {
-        for (Monster m : monsters) m.draw(g2, cameraX, cameraY);
+
+        for (Monster m : monsters)
+            m.draw(g2, cameraX, cameraY);
+
         drillEffect.draw(g2, cameraX, cameraY);
+        teleportFX.draw(g2, cameraX, cameraY);
     }
 
     private void detectNewVisibleTiles() {
+
         Set<Point> currentVisible = game.getVisibleTiles();
+
         for (Point tile : currentVisible) {
-            if (!knownVisibleTiles.contains(tile)) trySpawnMonster(tile);
+
+            if (!knownVisibleTiles.contains(tile))
+                trySpawnMonster(tile);
         }
+
         knownVisibleTiles.clear();
         knownVisibleTiles.addAll(currentVisible);
     }
 
     private void trySpawnMonster(Point tile) {
-        if ((pool.normal.isEmpty() && pool.misc.isEmpty()) || !monsters.isEmpty()) return;
-        if (random.nextDouble() > 0.05) return;
-        if (game.getMaze().isWallTile(tile.x, tile.y)) return;
+
+        if ((pool.normal.isEmpty() && pool.misc.isEmpty()) || !monsters.isEmpty())
+            return;
+
+        if (random.nextDouble() > 0.05)
+            return;
+
+        if (game.getMaze().isWallTile(tile.x, tile.y))
+            return;
 
         double tileCenterX = tile.x * Game.TILE + Game.TILE / 2.0;
         double tileCenterY = tile.y * Game.TILE + Game.TILE / 2.0;
+
         double playerX = game.getPlayer().x;
         double playerY = game.getPlayer().y;
 
         double dist = Math.hypot(playerX - tileCenterX, playerY - tileCenterY);
-        if (dist < Game.TILE * 2) return;
+
+        if (dist < Game.TILE * 2)
+            return;
 
         ImageLoader.LoadedImage loaded;
+
         if (!pool.misc.isEmpty() && random.nextDouble() < 0.2) {
             loaded = pool.misc.get(random.nextInt(pool.misc.size()));
         } else {
