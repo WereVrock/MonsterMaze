@@ -38,9 +38,7 @@ public class Game extends JPanel implements Runnable {
     private SpeedEffectVFX speedFx = new SpeedEffectVFX();
     private SpeedFXSystem speedFXSystem = new SpeedFXSystem();
 
-    private double cameraX;
-    private double cameraY;
-    private double cameraZoom = 1.0;
+    private Camera camera;
 
     public Game() {
         setPreferredSize(Toolkit.getDefaultToolkit().getScreenSize());
@@ -66,8 +64,7 @@ public class Game extends JPanel implements Runnable {
         selectionManager = new PlayerSelectionManager(playerImages);
         settingsMenu = new SettingsMenu();
 
-        cameraX = player.x - WIDTH * TILE / 2;
-        cameraY = player.y - HEIGHT * TILE / 2;
+        camera = new Camera(this, WIDTH, HEIGHT, TILE);
 
         new Thread(this).start();
     }
@@ -96,10 +93,6 @@ public class Game extends JPanel implements Runnable {
             speedFXSystem.spawnSpeedEffects(player.x, player.y, player.getSpeedMultiplier());
         }
 
-        double targetZoom = 1.0;
-        if (settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0) targetZoom = 0.85;
-        cameraZoom += (targetZoom - cameraZoom) * 0.08;
-
         if (settingsMenu.isToiletSystemEnabled()) poopBar.update();
 
         if (controller.getLeftTrigger() > 0.7f) settingsMenu.toggleActive();
@@ -123,7 +116,7 @@ public class Game extends JPanel implements Runnable {
 
         updatePlayerMovement();
         maze.ensureArea(player.x, player.y);
-        checkVisibleTiles();
+        updateVisibleTiles();
 
         if (settingsMenu.isToiletSystemEnabled()) {
             boolean onToilet = toilets.isPlayerOnToilet(player);
@@ -147,6 +140,8 @@ public class Game extends JPanel implements Runnable {
 
         monsterSpawner.updateMonsters(happyFx);
         happyFx.update();
+
+        camera.update();
     }
 
     private void updatePlayerMovement() {
@@ -187,27 +182,17 @@ public class Game extends JPanel implements Runnable {
         poopBar = new PoopBar();
         speedFx = new SpeedEffectVFX();
         speedFXSystem = new SpeedFXSystem();
-        cameraX = player.x - WIDTH*TILE/2;
-        cameraY = player.y - HEIGHT*TILE/2;
-        cameraZoom = 1.0;
 
         ImageLoader loader = new ImageLoader();
         ImageLoader.MonsterImagePool monsterPool = loader.setupMonsterImages(TILE);
         monsterSpawner = new MonsterSpawner(this, monsterPool);
+
+        camera = new Camera(this, WIDTH, HEIGHT, TILE);
     }
 
-    private void checkVisibleTiles() {
-        int screenCenterX = WIDTH * TILE / 2;
-        int screenCenterY = HEIGHT * TILE / 2;
-
-        double targetX = player.x - screenCenterX;
-        double targetY = player.y - screenCenterY;
-
-        cameraX += (targetX - cameraX) * 0.12;
-        cameraY += (targetY - cameraY) * 0.12;
-
-        int baseTileX = (int)(cameraX / TILE);
-        int baseTileY = (int)(cameraY / TILE);
+    private void updateVisibleTiles() {
+        int baseTileX = (int)(camera.getX() / TILE);
+        int baseTileY = (int)(camera.getY() / TILE);
 
         int startX = baseTileX - VIEW_PADDING;
         int startY = baseTileY - VIEW_PADDING;
@@ -232,44 +217,42 @@ public class Game extends JPanel implements Runnable {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 
+        camera.applyTransform(g2);
+
         int screenW = getWidth();
         int screenH = getHeight();
-
-        g2.translate(screenW/2, screenH/2);
-        g2.scale(cameraZoom, cameraZoom);
-        g2.translate(-screenW/2, -screenH/2);
 
         if (selectingPlayer) {
             selectionManager.drawSelection(g2, screenW, screenH, TILE);
             return;
         }
 
-        int baseTileX = (int)(cameraX / TILE);
-        int baseTileY = (int)(cameraY / TILE);
+        int baseTileX = (int)(camera.getX() / TILE);
+        int baseTileY = (int)(camera.getY() / TILE);
 
         for (int wy = baseTileY - VIEW_PADDING; wy < baseTileY + HEIGHT + VIEW_PADDING; wy++) {
             for (int wx = baseTileX - VIEW_PADDING; wx < baseTileX + WIDTH + VIEW_PADDING; wx++) {
-                int sx = wx * TILE - (int) cameraX;
-                int sy = wy * TILE - (int) cameraY;
+                int sx = wx * TILE - (int) camera.getX();
+                int sy = wy * TILE - (int) camera.getY();
                 g2.setColor(maze.isWallTile(wx, wy) ? Color.DARK_GRAY : Color.GRAY);
                 g2.fillRect(sx, sy, TILE, TILE);
             }
         }
 
-        if (settingsMenu.isToiletSystemEnabled()) toilets.draw(g2, cameraX, cameraY);
-        monsterSpawner.drawMonsters(g2, cameraX, cameraY);
-        happyFx.draw(g2, cameraX, cameraY);
+        if (settingsMenu.isToiletSystemEnabled()) toilets.draw(g2, camera.getX(), camera.getY());
+        monsterSpawner.drawMonsters(g2, camera.getX(), camera.getY());
+        happyFx.draw(g2, camera.getX(), camera.getY());
 
         if (settingsMenu.isSpeedVfxEnabled()) {
-            speedFx.draw(g2, cameraX, cameraY);
-            speedFXSystem.draw(g2, cameraX, cameraY, playerImg, player.x, player.y);
+            speedFx.draw(g2, camera.getX(), camera.getY());
+            speedFXSystem.draw(g2, camera.getX(), camera.getY(), playerImg, player.x, player.y);
         }
 
         double tilt = 0;
         if (settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0) tilt = controller.getLX() * 0.22;
 
         Graphics2D gPlayer = (Graphics2D) g2.create();
-        gPlayer.translate(player.x - cameraX, player.y - cameraY);
+        gPlayer.translate(player.x - camera.getX(), player.y - camera.getY());
         gPlayer.rotate(tilt);
         gPlayer.drawImage(playerImg, -playerImg.getWidth()/2, -playerImg.getHeight()/2, null);
         gPlayer.dispose();
