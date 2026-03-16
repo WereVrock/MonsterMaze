@@ -2,7 +2,7 @@ package wv.monstermaze.main;
 
 import java.io.InputStream;
 import java.util.Random;
-import javazoom.jl.player.Player;
+import javazoom.jl.player.advanced.AdvancedPlayer;
 
 public class PoopSound {
 
@@ -13,7 +13,7 @@ public class PoopSound {
         new Thread(() -> {
 
             try {
-                // 50% chance
+
                 String fileName = RANDOM.nextBoolean() ? "poop.mp3" : "poop2.mp3";
 
                 InputStream is = PoopSound.class
@@ -25,8 +25,10 @@ public class PoopSound {
                     return;
                 }
 
-                Player mp3Player = new Player(is);
-                mp3Player.play();
+                BoostedAudioDevice device = new BoostedAudioDevice(2.5f);
+                AdvancedPlayer player = new AdvancedPlayer(is, device);
+
+                player.play();
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -34,5 +36,8 @@ public class PoopSound {
 
         }).start();
 
+    }
+    public static void main (String... a){
+        play();
     }
 }
