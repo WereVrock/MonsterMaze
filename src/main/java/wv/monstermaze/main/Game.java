@@ -13,7 +13,6 @@ public class Game extends JPanel implements Runnable {
     public static final int HEIGHT = Toolkit.getDefaultToolkit().getScreenSize().height / TILE;
 
     private Player player;
-    private Monster monster;
     private MazeGenerator maze;
 
     private BufferedImage playerImg;
@@ -90,14 +89,14 @@ public class Game extends JPanel implements Runnable {
             speedFXSystem.update();
         }
 
-        if(player.getSpeedMultiplier() > 1.0 && settingsMenu.isSpeedVfxEnabled()){
+        if (player.getSpeedMultiplier() > 1.0 && settingsMenu.isSpeedVfxEnabled()) {
             boolean high = player.getSpeedMultiplier() > 1.5;
-            speedFx.spawnBoostTrail(player.x,player.y,high);
-            speedFXSystem.spawnSpeedEffects(player.x,player.y,player.getSpeedMultiplier());
+            speedFx.spawnBoostTrail(player.x, player.y, high);
+            speedFXSystem.spawnSpeedEffects(player.x, player.y, player.getSpeedMultiplier());
         }
 
         double targetZoom = 1.0;
-        if(settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0) targetZoom = 0.85;
+        if (settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0) targetZoom = 0.85;
         cameraZoom += (targetZoom - cameraZoom) * 0.08;
 
         if (settingsMenu.isToiletSystemEnabled()) poopBar.update();
@@ -130,42 +129,30 @@ public class Game extends JPanel implements Runnable {
             boolean onToilet = toilets.isPlayerOnToilet(player);
             if (controller.isXPressed() && onToilet) {
                 player.freeze(0.5);
-                if(settingsMenu.isSpeedVfxEnabled()){
-                    speedFx.triggerToiletBurst(player.x,player.y);
-                    speedFXSystem.triggerBoost(player.x,player.y);
+                if (settingsMenu.isSpeedVfxEnabled()) {
+                    speedFx.triggerToiletBurst(player.x, player.y);
+                    speedFXSystem.triggerBoost(player.x, player.y);
                 }
                 if (poopBar.isGreen()) {
                     PoopSound.play();
-                    player.triggerSpeedBoost(1.8,10);
+                    player.triggerSpeedBoost(1.8, 10);
                     poopBar.reset();
                 } else if (poopBar.isRed()) {
                     PoopSound.play();
-                    player.triggerSpeedBoost(1.35,10);
+                    player.triggerSpeedBoost(1.35, 10);
                     poopBar.reset();
                 }
             }
         }
 
-        // Monster updates
-        if (monster == null) {
-            monster = monsterSpawner.trySpawnMonster();
-        }
-
-        if (monster != null) {
-            monster.update(this);
-            if (!monster.isActive()) monster = null;
-        }
+        // --- MONSTER SYSTEM DELEGATED ---
+        monsterSpawner.updateMonsters(happyFx);
 
         happyFx.update();
-
-        if (monster != null && player.distance(monster.getX(), monster.getY()) < 32) {
-            happyFx.trigger(monster.getX(), monster.getY());
-            monster = null;
-        }
     }
 
     private void updatePlayerMovement() {
-        if(player.isFrozen()) return;
+        if (player.isFrozen()) return;
 
         double lx = controller.getLX();
         double ly = -controller.getLY();
@@ -196,7 +183,6 @@ public class Game extends JPanel implements Runnable {
         selectingPlayer = true;
         maze = new MazeGenerator();
         player = new Player(2 * TILE + TILE / 2, 2 * TILE + TILE / 2);
-        monster = null;
         visibleTiles.clear();
         happyFx = new HappyBumpEffect();
         toilets = new ToiletManager();
@@ -206,6 +192,9 @@ public class Game extends JPanel implements Runnable {
         cameraX = player.x - WIDTH*TILE/2;
         cameraY = player.y - HEIGHT*TILE/2;
         cameraZoom = 1.0;
+
+        // Reset monster spawner
+        monsterSpawner = new MonsterSpawner(this, monsterImages);
     }
 
     private void checkVisibleTiles() {
@@ -230,7 +219,6 @@ public class Game extends JPanel implements Runnable {
                 newVisible.add(p);
                 if (!visibleTiles.contains(p)) {
                     if (settingsMenu.isToiletSystemEnabled()) toilets.onTileGenerated(x, y, maze);
-                    monsterSpawner.onTileEntered(p); // let spawner decide to spawn
                 }
             }
         }
@@ -264,17 +252,19 @@ public class Game extends JPanel implements Runnable {
         }
 
         if (settingsMenu.isToiletSystemEnabled()) toilets.draw(g2, cameraX, cameraY);
-        if (monster != null) monster.draw(g2, cameraX, cameraY);
+
+        // --- DRAW MONSTERS ---
+        monsterSpawner.drawMonsters(g2, cameraX, cameraY);
 
         happyFx.draw(g2, cameraX, cameraY);
 
-        if(settingsMenu.isSpeedVfxEnabled()){
-            speedFx.draw(g2,cameraX,cameraY);
-            speedFXSystem.draw(g2,cameraX,cameraY,playerImg,player.x,player.y);
+        if (settingsMenu.isSpeedVfxEnabled()) {
+            speedFx.draw(g2, cameraX, cameraY);
+            speedFXSystem.draw(g2, cameraX, cameraY, playerImg, player.x, player.y);
         }
 
         double tilt = 0;
-        if(settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0){
+        if (settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0){
             tilt = controller.getLX() * 0.22;
         }
 

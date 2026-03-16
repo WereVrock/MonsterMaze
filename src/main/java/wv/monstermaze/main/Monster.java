@@ -2,15 +2,13 @@ package wv.monstermaze.main;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.Set;
 import java.util.Random;
+import java.util.Set;
 
 public class Monster {
 
-    private double x;
-    private double y;
+    private double x, y;
     private final BufferedImage img;
-
     private int targetTileX, targetTileY;
     private double speed = 1.5;
     private double lastFootstepX, lastFootstepY;
@@ -57,7 +55,6 @@ public class Monster {
         if (sx != 0 || sy != 0) {
             manualMove(game.getMaze(), game.getVisibleTiles(), sx, sy);
         } else {
-            // Occasionally pick a new random target if reached current one
             double targetX = targetTileX * Game.TILE + Game.TILE / 2;
             double targetY = targetTileY * Game.TILE + Game.TILE / 2;
             double dx = targetX - x;
@@ -68,9 +65,6 @@ public class Monster {
             }
             aiMove(game.getMaze(), game.getVisibleTiles());
         }
-
-        // Deactivate if too far from player
-        if (distance(game.getPlayer().x, game.getPlayer().y) > Game.TILE * 25) active = false;
     }
 
     public void draw(Graphics2D g2, double cameraX, double cameraY) {
@@ -114,7 +108,6 @@ public class Monster {
         if (!maze.isColliding(nextX)) { x+=nx; moved=true; }
         if (!maze.isColliding(nextY)) { y+=ny; moved=true; }
 
-        // Update target tile after manual movement to avoid snapping back
         targetTileX = (int)(x / Game.TILE);
         targetTileY = (int)(y / Game.TILE);
 

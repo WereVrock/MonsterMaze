@@ -2,56 +2,109 @@ package wv.monstermaze.main;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 public class MonsterSpawner {
 
     private final Game game;
     private final List<BufferedImage> monsterImages;
     private final Random random = new Random();
+    private final List<Monster> monsters = new ArrayList<>();
+    private final double DESPAWN_DISTANCE;
 
-    public MonsterSpawner(Game game, List<BufferedImage> monsterImages){
+    private final Set<Point> knownVisibleTiles = new HashSet<>();
+
+    public MonsterSpawner(Game game, List<BufferedImage> monsterImages) {
         this.game = game;
         this.monsterImages = monsterImages;
+        this.DESPAWN_DISTANCE = Game.TILE * Game.WIDTH * 1.5; // 1.5 screen width
+    }
+
+    public List<Monster> getMonsters() {
+        return monsters;
     }
 
     /**
-     * Attempt to spawn a monster in the visible area.
-     * Returns a new Monster if spawned, or null otherwise.
+     * Updates all monsters and handles:
+     * - spawning on newly visible tiles
+     * - despawning
+     * - player collision
      */
-    public Monster trySpawnMonster(){
-        for (Point tile : game.getVisibleTiles()){
-            // Skip walls
-            if (game.getMaze().isWallTile(tile.x, tile.y)) continue;
+    public void updateMonsters(HappyBumpEffect happyFx) {
+        detectNewVisibleTiles();
 
-            // Random chance
-            if (random.nextDouble() > 0.05) continue;
+        List<Monster> toRemove = new ArrayList<>();
+        Player player = game.getPlayer();
 
-            // Skip if no monster images loaded
-            if (monsterImages.isEmpty()) continue;
+        for (Monster m : monsters) {
+            m.update(game);
 
-            // Ensure the spawn tile is far enough from the player
-            double tileCenterX = tile.x * Game.TILE + Game.TILE / 2.0;
-            double tileCenterY = tile.y * Game.TILE + Game.TILE / 2.0;
-            double playerX = game.getPlayer().x;
-            double playerY = game.getPlayer().y;
-            double dist = Math.hypot(playerX - tileCenterX, playerY - tileCenterY);
-            if (dist < Game.TILE * 2) continue; // at least 2 tiles away
+            double distanceToPlayer = m.distance(player.x, player.y);
 
-            // Pick random monster image
-            BufferedImage img = monsterImages.get(random.nextInt(monsterImages.size()));
+            // Collision with player
+            if (distanceToPlayer < 32) {
+                happyFx.trigger(m.getX(), m.getY());
+                toRemove.add(m);
+                continue;
+            }
 
-            return new Monster(tileCenterX, tileCenterY, img, game.getSettingsMenu());
+            // Despawn if too far
+            if (distanceToPlayer > DESPAWN_DISTANCE) {
+                toRemove.add(m);
+            }
         }
-        return null;
+
+        monsters.removeAll(toRemove);
     }
 
     /**
-     * Called when a new tile becomes visible.
-     * Optional: can spawn monsters here too.
+     * Draw all monsters
      */
-    public void onTileEntered(Point tile){
-        // For now, spawning is handled in trySpawnMonster() to avoid multiple spawns
+    public void drawMonsters(Graphics2D g2, double cameraX, double cameraY) {
+        for (Monster m : monsters) {
+            m.draw(g2, cameraX, cameraY);
+        }
+    }
+
+    /**
+     * Detects newly visible tiles and attempts to spawn monsters on them
+     */
+    private void detectNewVisibleTiles() {
+        Set<Point> currentVisible = game.getVisibleTiles();
+        for (Point tile : currentVisible) {
+            if (!knownVisibleTiles.contains(tile)) {
+                // New tile detected
+                trySpawnMonster(tile);
+            }
+        }
+        knownVisibleTiles.clear();
+        knownVisibleTiles.addAll(currentVisible);
+    }
+
+    /**
+     * Attempts to spawn a monster on a tile if no visible monsters exist
+     */
+    private void trySpawnMonster(Point tile) {
+        if (monsterImages.isEmpty() || !monsters.isEmpty()) return;
+        if (random.nextDouble() > 0.05) return;
+
+        if (game.getMaze().isWallTile(tile.x, tile.y)) return;
+
+        double tileCenterX = tile.x * Game.TILE + Game.TILE / 2.0;
+        double tileCenterY = tile.y * Game.TILE + Game.TILE / 2.0;
+
+        double playerX = game.getPlayer().x;
+        double playerY = game.getPlayer().y;
+        double dist = Math.hypot(playerX - tileCenterX, playerY - tileCenterY);
+
+        if (dist < Game.TILE * 2) return;
+
+        BufferedImage img = monsterImages.get(random.nextInt(monsterImages.size()));
+        Monster m = new Monster(tileCenterX, tileCenterY, img, game.getSettingsMenu());
+        monsters.add(m);
     }
 }
