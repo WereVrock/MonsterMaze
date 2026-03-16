@@ -9,8 +9,10 @@ import java.util.Set;
 public class Game extends JPanel implements Runnable {
 
     public static final int TILE = 96;
-    public static final int WIDTH = Toolkit.getDefaultToolkit().getScreenSize().width / TILE;
-    public static final int HEIGHT = Toolkit.getDefaultToolkit().getScreenSize().height / TILE;
+    public static final int WIDTH = Toolkit.getDefaultToolkit().getScreenSize().width / TILE + 2;
+    public static final int HEIGHT = Toolkit.getDefaultToolkit().getScreenSize().height / TILE + 2;
+
+    private static final int VIEW_PADDING = 4;
 
     private Player player;
     private MazeGenerator maze;
@@ -145,7 +147,6 @@ public class Game extends JPanel implements Runnable {
             }
         }
 
-        // --- MONSTER SYSTEM DELEGATED ---
         monsterSpawner.updateMonsters(happyFx);
 
         happyFx.update();
@@ -193,11 +194,11 @@ public class Game extends JPanel implements Runnable {
         cameraY = player.y - HEIGHT*TILE/2;
         cameraZoom = 1.0;
 
-        // Reset monster spawner
         monsterSpawner = new MonsterSpawner(this, monsterImages);
     }
 
     private void checkVisibleTiles() {
+
         int screenCenterX = WIDTH * TILE / 2;
         int screenCenterY = HEIGHT * TILE / 2;
 
@@ -207,27 +208,36 @@ public class Game extends JPanel implements Runnable {
         cameraX += (targetX - cameraX) * 0.12;
         cameraY += (targetY - cameraY) * 0.12;
 
-        int startX = (int) (cameraX / TILE) - 1;
-        int startY = (int) (cameraY / TILE) - 1;
-        int endX = startX + WIDTH + 2;
-        int endY = startY + HEIGHT + 2;
+        int baseTileX = (int)(cameraX / TILE);
+        int baseTileY = (int)(cameraY / TILE);
+
+        int startX = baseTileX - VIEW_PADDING;
+        int startY = baseTileY - VIEW_PADDING;
+        int endX = baseTileX + WIDTH + VIEW_PADDING;
+        int endY = baseTileY + HEIGHT + VIEW_PADDING;
 
         Set<Point> newVisible = new HashSet<>();
+
         for (int y = startY; y < endY; y++) {
             for (int x = startX; x < endX; x++) {
+
                 Point p = new Point(x, y);
                 newVisible.add(p);
+
                 if (!visibleTiles.contains(p)) {
-                    if (settingsMenu.isToiletSystemEnabled()) toilets.onTileGenerated(x, y, maze);
+                    if (settingsMenu.isToiletSystemEnabled())
+                        toilets.onTileGenerated(x, y, maze);
                 }
             }
         }
+
         visibleTiles = newVisible;
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+
         Graphics2D g2 = (Graphics2D) g;
 
         int screenW = getWidth();
@@ -242,18 +252,24 @@ public class Game extends JPanel implements Runnable {
             return;
         }
 
-        for (int wy = (int) (cameraY / TILE) - 1; wy < (int) (cameraY / TILE) + HEIGHT + 1; wy++) {
-            for (int wx = (int) (cameraX / TILE) - 1; wx < (int) (cameraX / TILE) + WIDTH + 1; wx++) {
+        int baseTileX = (int)(cameraX / TILE);
+        int baseTileY = (int)(cameraY / TILE);
+
+        for (int wy = baseTileY - VIEW_PADDING; wy < baseTileY + HEIGHT + VIEW_PADDING; wy++) {
+
+            for (int wx = baseTileX - VIEW_PADDING; wx < baseTileX + WIDTH + VIEW_PADDING; wx++) {
+
                 int sx = wx * TILE - (int) cameraX;
                 int sy = wy * TILE - (int) cameraY;
+
                 g2.setColor(maze.isWallTile(wx, wy) ? Color.DARK_GRAY : Color.GRAY);
                 g2.fillRect(sx, sy, TILE, TILE);
             }
         }
 
-        if (settingsMenu.isToiletSystemEnabled()) toilets.draw(g2, cameraX, cameraY);
+        if (settingsMenu.isToiletSystemEnabled())
+            toilets.draw(g2, cameraX, cameraY);
 
-        // --- DRAW MONSTERS ---
         monsterSpawner.drawMonsters(g2, cameraX, cameraY);
 
         happyFx.draw(g2, cameraX, cameraY);
@@ -264,18 +280,24 @@ public class Game extends JPanel implements Runnable {
         }
 
         double tilt = 0;
-        if (settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0){
+
+        if (settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0) {
             tilt = controller.getLX() * 0.22;
         }
 
         Graphics2D gPlayer = (Graphics2D) g2.create();
+
         gPlayer.translate(player.x - cameraX, player.y - cameraY);
         gPlayer.rotate(tilt);
         gPlayer.drawImage(playerImg, -playerImg.getWidth()/2, -playerImg.getHeight()/2, null);
+
         gPlayer.dispose();
 
-        if (settingsMenu.isToiletSystemEnabled()) poopBar.draw(g2, screenW, toilets.isPlayerOnToilet(player));
-        if (settingsMenu.isActive()) settingsMenu.draw(g2, screenW, screenH);
+        if (settingsMenu.isToiletSystemEnabled())
+            poopBar.draw(g2, screenW, toilets.isPlayerOnToilet(player));
+
+        if (settingsMenu.isActive())
+            settingsMenu.draw(g2, screenW, screenH);
     }
 
     public Player getPlayer() { return player; }
@@ -285,6 +307,7 @@ public class Game extends JPanel implements Runnable {
     public SettingsMenu getSettingsMenu() { return settingsMenu; }
 
     public static void main(String[] args) {
+
         JFrame f = new JFrame("Labyrinth");
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setUndecorated(true);
@@ -293,7 +316,9 @@ public class Game extends JPanel implements Runnable {
 
         Game game = new Game();
         f.add(game);
+
         device.setFullScreenWindow(f);
+
         f.validate();
     }
 }
