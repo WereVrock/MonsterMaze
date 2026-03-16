@@ -1,6 +1,7 @@
 package wv.monstermaze.main;
 
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.util.Random;
 import java.util.Set;
@@ -24,6 +25,7 @@ public class Monster {
     private boolean active = true;
 
     private boolean driller;
+    private boolean swapper;
 
     private final Random random = new Random();
 
@@ -34,27 +36,27 @@ public class Monster {
     this.vip = vip;
     this.settingsMenu = settingsMenu;
 
-    // Calculate target tile positions
     this.targetTileX = (int)(x / Game.TILE);
     this.targetTileY = (int)(y / Game.TILE);
 
-    // Track last footstep position
     this.lastFootstepX = x;
     this.lastFootstepY = y;
 
-    // Determine chances for joker and driller
-    double jokerChance = vip ? 0.6 : 0.2;    // triple chance if VIP
+    double jokerChance = vip ? 0.6 : 0.2;
     double drillerChance = vip ? 0.15 : 0.05;
+
+    double swapperChance = vip ? 0.30 : 0.10;
 
     this.joker = Math.random() < jokerChance;
     if (this.joker) {
-        this.speed = 8; // special speed for joker
+        this.speed = 8;
     }
 
     this.driller = Math.random() < drillerChance;
-
-    
+    this.swapper = Math.random() < swapperChance;
+    this.swapper=true;
 }
+
     public void update(Game game) {
         updateFlip();
 
@@ -82,6 +84,29 @@ public class Monster {
         }
 
         if (driller) destroyWalls(game);
+
+        if (swapper) trySwapWithPlayer(game);
+    }
+
+    private void trySwapWithPlayer(Game game) {
+
+        if (random.nextDouble() > 0.003) return;
+
+        if (!isVisible(game.getVisibleTiles())) return;
+
+        Player player = game.getPlayer();
+
+        double px = player.x;
+        double py = player.y;
+
+        player.x = this.x;
+        player.y = this.y;
+
+        this.x = px;
+        this.y = py;
+
+        targetTileX = (int)(x / Game.TILE);
+        targetTileY = (int)(y / Game.TILE);
     }
 
     public void draw(Graphics2D g2, double cameraX, double cameraY) {
