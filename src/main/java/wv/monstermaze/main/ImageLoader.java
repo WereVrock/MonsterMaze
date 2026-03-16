@@ -9,8 +9,18 @@ import java.util.List;
 
 public class ImageLoader {
 
-    public java.util.List<BufferedImage> loadImages(String folderName, int tileSize) {
-        java.util.List<BufferedImage> images = new ArrayList<>();
+    public static class LoadedImage {
+        public final BufferedImage image;
+        public final boolean vip;
+
+        public LoadedImage(BufferedImage image, boolean vip) {
+            this.image = image;
+            this.vip = vip;
+        }
+    }
+
+    public List<LoadedImage> loadImages(String folderName, int tileSize) {
+        List<LoadedImage> images = new ArrayList<>();
 
         try {
             File folder = new File(folderName);
@@ -27,13 +37,35 @@ public class ImageLoader {
 
             for (File f : files) {
                 try {
+                    if (!f.isFile()) continue;
                     BufferedImage img = ImageIO.read(f);
                     if (img != null) {
-                        images.add(scaleImage(img, tileSize, tileSize));
-                        System.out.println("Loaded " + folderName + " image: " + f.getName());
+                        boolean vip = folderName.toLowerCase().contains("vip");
+                        images.add(new LoadedImage(scaleImage(img, tileSize, tileSize), vip));
+                        System.out.println("Loaded " + folderName + " image: " + f.getName() + (vip ? " [VIP]" : ""));
                     }
                 } catch (Exception e) {
                     System.out.println("Failed loading: " + f.getName());
+                }
+            }
+
+            // also load VIP subfolder if exists
+            File vipFolder = new File(folder, "vip");
+            if (vipFolder.exists() && vipFolder.isDirectory()) {
+                File[] vipFiles = vipFolder.listFiles();
+                if (vipFiles != null) {
+                    for (File f : vipFiles) {
+                        try {
+                            if (!f.isFile()) continue;
+                            BufferedImage img = ImageIO.read(f);
+                            if (img != null) {
+                                images.add(new LoadedImage(scaleImage(img, tileSize, tileSize), true));
+                                System.out.println("Loaded VIP image: " + f.getName());
+                            }
+                        } catch (Exception e) {
+                            System.out.println("Failed loading VIP image: " + f.getName());
+                        }
+                    }
                 }
             }
 

@@ -3,6 +3,7 @@ package wv.monstermaze.main;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
+import java.util.List;
 
 public class ToiletManager {
 
@@ -16,12 +17,19 @@ public class ToiletManager {
     public ToiletManager() {
 
         ImageLoader loader = new ImageLoader();
-        images = loader.loadImages("toilets", Game.TILE);
+        List<ImageLoader.LoadedImage> loaded = loader.loadImages("toilets", Game.TILE);
+
+        images = new ArrayList<>();
+        for (ImageLoader.LoadedImage li : loaded) {
+            images.add(li.image);  // just take the BufferedImage
+        }
     }
 
     public void onTileGenerated(int x, int y, MazeGenerator maze) {
 
-        if (maze.isWallTile(x, y)) return;
+        if (maze.isWallTile(x, y)) {
+            return;
+        }
 
         if (rand.nextDouble() < 0.02) {
 
@@ -65,8 +73,8 @@ public class ToiletManager {
 
         for (Point t : toilets) {
 
-            int sx = t.x * Game.TILE - (int)camX;
-            int sy = t.y * Game.TILE - (int)camY;
+            int sx = t.x * Game.TILE - (int) camX;
+            int sy = t.y * Game.TILE - (int) camY;
 
             BufferedImage img = toiletImages.get(t);
 
@@ -74,8 +82,8 @@ public class ToiletManager {
 
                 g2.drawImage(
                         img,
-                        sx + Game.TILE/2 - img.getWidth()/2,
-                        sy + Game.TILE/2 - img.getHeight()/2,
+                        sx + Game.TILE / 2 - img.getWidth() / 2,
+                        sy + Game.TILE / 2 - img.getHeight() / 2,
                         null
                 );
 

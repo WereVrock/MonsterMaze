@@ -5,6 +5,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Game extends JPanel implements Runnable {
 
@@ -18,8 +20,8 @@ public class Game extends JPanel implements Runnable {
     private MazeGenerator maze;
 
     private BufferedImage playerImg;
-    private java.util.List<BufferedImage> playerImages;
-    private java.util.List<BufferedImage> monsterImages;
+    private List<BufferedImage> playerImages;
+    private List<ImageLoader.LoadedImage> monsterImages;  // updated to LoadedImage
 
     private boolean selectingPlayer = true;
     private int playerSelectionIndex = 0;
@@ -55,12 +57,15 @@ public class Game extends JPanel implements Runnable {
 
         ImageLoader loader = new ImageLoader();
 
-        playerImages = loader.loadImages("player", TILE);
+        // --- load player images ---
+        List<ImageLoader.LoadedImage> loadedPlayers = loader.loadImages("player", TILE);
+        playerImages = new ArrayList<>();
+        for (ImageLoader.LoadedImage li : loadedPlayers) playerImages.add(li.image);
+
+        // --- load monster images (with VIP support) ---
         monsterImages = loader.loadImages("monsters", TILE);
 
-        if (!playerImages.isEmpty()) {
-            playerImg = playerImages.get(0);
-        }
+        if (!playerImages.isEmpty()) playerImg = playerImages.get(0);
 
         selectionManager = new PlayerSelectionManager(playerImages);
         settingsMenu = new SettingsMenu();
@@ -256,7 +261,6 @@ public class Game extends JPanel implements Runnable {
         int baseTileY = (int)(cameraY / TILE);
 
         for (int wy = baseTileY - VIEW_PADDING; wy < baseTileY + HEIGHT + VIEW_PADDING; wy++) {
-
             for (int wx = baseTileX - VIEW_PADDING; wx < baseTileX + WIDTH + VIEW_PADDING; wx++) {
 
                 int sx = wx * TILE - (int) cameraX;
@@ -280,17 +284,14 @@ public class Game extends JPanel implements Runnable {
         }
 
         double tilt = 0;
-
         if (settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0) {
             tilt = controller.getLX() * 0.22;
         }
 
         Graphics2D gPlayer = (Graphics2D) g2.create();
-
         gPlayer.translate(player.x - cameraX, player.y - cameraY);
         gPlayer.rotate(tilt);
         gPlayer.drawImage(playerImg, -playerImg.getWidth()/2, -playerImg.getHeight()/2, null);
-
         gPlayer.dispose();
 
         if (settingsMenu.isToiletSystemEnabled())
@@ -307,7 +308,6 @@ public class Game extends JPanel implements Runnable {
     public SettingsMenu getSettingsMenu() { return settingsMenu; }
 
     public static void main(String[] args) {
-
         JFrame f = new JFrame("Labyrinth");
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setUndecorated(true);

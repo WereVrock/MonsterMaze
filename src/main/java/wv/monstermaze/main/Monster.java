@@ -13,6 +13,7 @@ public class Monster {
     private double speed = 1.5;
     private double lastFootstepX, lastFootstepY;
     private final SettingsMenu settingsMenu;
+    public boolean vip=false;
 
     private static final double STICK_THRESHOLD = 0.2;
     private boolean flipped = false;
@@ -26,25 +27,34 @@ public class Monster {
 
     private final Random random = new Random();
 
-    public Monster(double x, double y, BufferedImage img, SettingsMenu settingsMenu) {
-        this.x = x;
-        this.y = y;
-        this.img = img;
-        this.settingsMenu = settingsMenu;
+   public Monster(double x, double y, BufferedImage img, boolean vip, SettingsMenu settingsMenu) {
+    this.x = x;
+    this.y = y;
+    this.img = img;
+    this.vip = vip;
+    this.settingsMenu = settingsMenu;
 
-        this.targetTileX = (int)(x / Game.TILE);
-        this.targetTileY = (int)(y / Game.TILE);
+    // Calculate target tile positions
+    this.targetTileX = (int)(x / Game.TILE);
+    this.targetTileY = (int)(y / Game.TILE);
 
-        this.lastFootstepX = x;
-        this.lastFootstepY = y;
+    // Track last footstep position
+    this.lastFootstepX = x;
+    this.lastFootstepY = y;
 
-        this.joker = Math.random() < 0.2;
-        if (joker) speed = 8;
+    // Determine chances for joker and driller
+    double jokerChance = vip ? 0.6 : 0.2;    // triple chance if VIP
+    double drillerChance = vip ? 0.15 : 0.05;
 
-        this.driller = Math.random() < 0.05;
-        
+    this.joker = Math.random() < jokerChance;
+    if (this.joker) {
+        this.speed = 8; // special speed for joker
     }
 
+    this.driller = Math.random() < drillerChance;
+
+    
+}
     public void update(Game game) {
         updateFlip();
 
