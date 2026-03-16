@@ -41,6 +41,8 @@ public class Game extends JPanel implements Runnable {
     private double cameraY;
     private double cameraZoom = 1.0;
 
+    private MonsterSpawner monsterSpawner;
+
     public Game() {
         setPreferredSize(Toolkit.getDefaultToolkit().getScreenSize());
 
@@ -65,6 +67,8 @@ public class Game extends JPanel implements Runnable {
         cameraX = player.x - WIDTH * TILE / 2;
         cameraY = player.y - HEIGHT * TILE / 2;
 
+        monsterSpawner = new MonsterSpawner(this, monsterImages);
+
         new Thread(this).start();
     }
 
@@ -73,12 +77,7 @@ public class Game extends JPanel implements Runnable {
         while (true) {
             update();
             repaint();
-
-            try {
-                Thread.sleep(16);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            try { Thread.sleep(16); } catch (Exception e) { e.printStackTrace(); }
         }
     }
 
@@ -86,43 +85,30 @@ public class Game extends JPanel implements Runnable {
         controller.poll();
         player.update();
 
-        // Speed effects
         if (settingsMenu.isSpeedVfxEnabled()) {
             speedFx.update();
             speedFXSystem.update();
         }
 
-        if(player.getSpeedMultiplier() > 1.0 && settingsMenu.isSpeedVfxEnabled()) {
+        if(player.getSpeedMultiplier() > 1.0 && settingsMenu.isSpeedVfxEnabled()){
             boolean high = player.getSpeedMultiplier() > 1.5;
             speedFx.spawnBoostTrail(player.x,player.y,high);
             speedFXSystem.spawnSpeedEffects(player.x,player.y,player.getSpeedMultiplier());
         }
 
-        // Camera zoom
         double targetZoom = 1.0;
-        if(settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0){
-            targetZoom = 0.85;
-        }
+        if(settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0) targetZoom = 0.85;
         cameraZoom += (targetZoom - cameraZoom) * 0.08;
 
-        // Toilet system
-        if (settingsMenu.isToiletSystemEnabled()) {
-            poopBar.update();
-        }
+        if (settingsMenu.isToiletSystemEnabled()) poopBar.update();
 
-        if (controller.getLeftTrigger() > 0.7f) {
-            settingsMenu.toggleActive();
-        }
-
+        if (controller.getLeftTrigger() > 0.7f) settingsMenu.toggleActive();
         if (settingsMenu.isActive()) {
             settingsMenu.update(controller.getLX(), controller.getLY(), controller.getRightTrigger() > 0.7f);
             return;
         }
 
-        if (controller.getRightTrigger() > 0.7f) {
-            restartToSelection();
-            return;
-        }
+        if (controller.getRightTrigger() > 0.7f) { restartToSelection(); return; }
 
         if (selectingPlayer) {
             if (selectionManager.updateSelection(controller.getLX(), controller.getLY(), lastInputTime)) {
@@ -160,11 +146,20 @@ public class Game extends JPanel implements Runnable {
             }
         }
 
-        updateMonster();
+        // Monster updates
+        if (monster == null) {
+            monster = monsterSpawner.trySpawnMonster();
+        }
+
+        if (monster != null) {
+            monster.update(this);
+            if (!monster.isActive()) monster = null;
+        }
+
         happyFx.update();
 
-        if (monster != null && player.distance(monster.x, monster.y) < 32) {
-            happyFx.trigger(monster.x, monster.y);
+        if (monster != null && player.distance(monster.getX(), monster.getY()) < 32) {
+            happyFx.trigger(monster.getX(), monster.getY());
             monster = null;
         }
     }
@@ -186,11 +181,8 @@ public class Game extends JPanel implements Runnable {
         double dy = ly * speed;
 
         Rectangle nextPos = player.getBounds(player.x + dx, player.y + dy);
-
-        if (!maze.isColliding(nextPos)) {
-            player.x += dx;
-            player.y += dy;
-        } else {
+        if (!maze.isColliding(nextPos)) { player.x += dx; player.y += dy; }
+        else {
             Rectangle nextX = player.getBounds(player.x + dx, player.y);
             Rectangle nextY = player.getBounds(player.x, player.y + dy);
             if (!maze.isColliding(nextX)) player.x += dx;
@@ -238,38 +230,11 @@ public class Game extends JPanel implements Runnable {
                 newVisible.add(p);
                 if (!visibleTiles.contains(p)) {
                     if (settingsMenu.isToiletSystemEnabled()) toilets.onTileGenerated(x, y, maze);
-                    onTileEntered(p);
+                    monsterSpawner.onTileEntered(p); // let spawner decide to spawn
                 }
             }
         }
         visibleTiles = newVisible;
-    }
-
-    private void onTileEntered(Point tile) {
-        if (monster != null) return;
-        if (maze.isWallTile(tile.x, tile.y)) return;
-        if (Math.random() > 0.05) return;
-        if (monsterImages.isEmpty()) return;
-
-        BufferedImage img = monsterImages.get(new java.util.Random().nextInt(monsterImages.size()));
-        double mx = tile.x * TILE + TILE / 2;
-        double my = tile.y * TILE + TILE / 2;
-        monster = new Monster(mx, my, img, settingsMenu);
-    }
-
-    private void updateMonster() {
-        if (monster == null) return;
-        if (controller.isXPressedController2()) monster.triggerFlip();
-        if (Math.random() < 0.01) {
-            Point p = maze.randomCorridorFarFrom(monster.x, monster.y, 2);
-            if (p != null) monster.setTargetTile(p.x, p.y);
-        }
-        monster.update(maze, visibleTiles, controller.getLX2(), controller.getLY2());
-        if (player.distance(monster.x, monster.y) < 32) {
-            happyFx.trigger(monster.x, monster.y);
-            monster = null;
-        }
-        if (player.distance(monster.x, monster.y) > TILE * 25) monster = null;
     }
 
     @Override
@@ -280,7 +245,6 @@ public class Game extends JPanel implements Runnable {
         int screenW = getWidth();
         int screenH = getHeight();
 
-        // Apply camera zoom
         g2.translate(screenW/2, screenH/2);
         g2.scale(cameraZoom, cameraZoom);
         g2.translate(-screenW/2, -screenH/2);
@@ -290,7 +254,6 @@ public class Game extends JPanel implements Runnable {
             return;
         }
 
-        // Draw maze
         for (int wy = (int) (cameraY / TILE) - 1; wy < (int) (cameraY / TILE) + HEIGHT + 1; wy++) {
             for (int wx = (int) (cameraX / TILE) - 1; wx < (int) (cameraX / TILE) + WIDTH + 1; wx++) {
                 int sx = wx * TILE - (int) cameraX;
@@ -301,15 +264,7 @@ public class Game extends JPanel implements Runnable {
         }
 
         if (settingsMenu.isToiletSystemEnabled()) toilets.draw(g2, cameraX, cameraY);
-
-        if (monster != null) {
-            double scaleX = monster.getFlipScale();
-            Graphics2D gFlip = (Graphics2D) g2.create();
-            gFlip.translate(monster.x - cameraX, monster.y - cameraY);
-            gFlip.scale(scaleX, 1);
-            gFlip.drawImage(monster.img, -monster.img.getWidth()/2, -monster.img.getHeight()/2, null);
-            gFlip.dispose();
-        }
+        if (monster != null) monster.draw(g2, cameraX, cameraY);
 
         happyFx.draw(g2, cameraX, cameraY);
 
@@ -332,6 +287,12 @@ public class Game extends JPanel implements Runnable {
         if (settingsMenu.isToiletSystemEnabled()) poopBar.draw(g2, screenW, toilets.isPlayerOnToilet(player));
         if (settingsMenu.isActive()) settingsMenu.draw(g2, screenW, screenH);
     }
+
+    public Player getPlayer() { return player; }
+    public MazeGenerator getMaze() { return maze; }
+    public Set<Point> getVisibleTiles() { return visibleTiles; }
+    public ControllerInput getController() { return controller; }
+    public SettingsMenu getSettingsMenu() { return settingsMenu; }
 
     public static void main(String[] args) {
         JFrame f = new JFrame("Labyrinth");

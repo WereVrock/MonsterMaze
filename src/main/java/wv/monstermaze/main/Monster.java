@@ -3,235 +3,161 @@ package wv.monstermaze.main;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.Set;
+import java.util.Random;
 
 public class Monster {
 
-    public double x;
-    public double y;
-    public BufferedImage img;
+    private double x;
+    private double y;
+    private final BufferedImage img;
 
-    private int targetTileX;
-    private int targetTileY;
-
+    private int targetTileX, targetTileY;
     private double speed = 1.5;
-
-    private double lastFootstepX;
-    private double lastFootstepY;
-
-    private SettingsMenu settingsMenu;
+    private double lastFootstepX, lastFootstepY;
+    private final SettingsMenu settingsMenu;
 
     private static final double STICK_THRESHOLD = 0.2;
-
     private boolean flipped = false;
     private boolean flipping = false;
     private double flipProgress = 0;
-    private double flipSpeed = 0.08;
-
+    private final double flipSpeed = 0.08;
     private boolean joker;
+    private boolean active = true;
+
+    private final Random random = new Random();
 
     public Monster(double x, double y, BufferedImage img, SettingsMenu settingsMenu) {
-
         this.x = x;
         this.y = y;
         this.img = img;
         this.settingsMenu = settingsMenu;
 
-        this.targetTileX = (int) (x / Game.TILE);
-        this.targetTileY = (int) (y / Game.TILE);
+        this.targetTileX = (int)(x / Game.TILE);
+        this.targetTileY = (int)(y / Game.TILE);
 
         this.lastFootstepX = x;
         this.lastFootstepY = y;
 
-        joker =Math.random() < 0.20;
-
-        if (joker) {
-            speed = 8;
-        }
+        this.joker = Math.random() < 0.2;
+        if (joker) speed = 8;
     }
 
-    public void setTargetTile(int tx, int ty) {
-        this.targetTileX = tx;
-        this.targetTileY = ty;
-    }
-
-    public void triggerFlip() {
-
-        if (!flipping) {
-            flipping = true;
-            flipProgress = 0;
-        }
-    }
-
-    public double getFlipScale() {
-
-        if (!flipping) {
-            return flipped ? -1 : 1;
-        }
-
-        double scale;
-
-        if (flipProgress < 0.5) {
-            scale = 1 - flipProgress * 2;
-        } else {
-            scale = (flipProgress - 0.5) * 2;
-        }
-
-        return flipped ? -scale : scale;
-    }
-
-    public void update(MazeGenerator maze, Set<Point> visibleTiles, float stickX, float stickY) {
-
+    public void update(Game game) {
         updateFlip();
 
-        if (joker && Math.random() < 0.01) {
-            triggerFlip();
-        }
+        if (joker && random.nextDouble() < 0.01) triggerFlip();
 
-        double sx = stickX;
-        double sy = -stickY;
+        float stickX = game.getController().getLX2();
+        float stickY = game.getController().getLY2();
+        double sx = stickX, sy = -stickY;
 
         if (Math.abs(sx) < STICK_THRESHOLD) sx = 0;
         if (Math.abs(sy) < STICK_THRESHOLD) sy = 0;
 
         if (sx != 0 || sy != 0) {
-            manualMove(maze, visibleTiles, sx, sy);
-            return;
+            manualMove(game.getMaze(), game.getVisibleTiles(), sx, sy);
+        } else {
+            // Occasionally pick a new random target if reached current one
+            double targetX = targetTileX * Game.TILE + Game.TILE / 2;
+            double targetY = targetTileY * Game.TILE + Game.TILE / 2;
+            double dx = targetX - x;
+            double dy = targetY - y;
+            if (Math.sqrt(dx*dx + dy*dy) < 1.0 || random.nextDouble() < 0.01) {
+                Point p = game.getMaze().randomCorridorFarFrom(x, y, 2);
+                if (p != null) setTargetTile(p.x, p.y);
+            }
+            aiMove(game.getMaze(), game.getVisibleTiles());
         }
 
-        aiMove(maze, visibleTiles);
+        // Deactivate if too far from player
+        if (distance(game.getPlayer().x, game.getPlayer().y) > Game.TILE * 25) active = false;
     }
 
+    public void draw(Graphics2D g2, double cameraX, double cameraY) {
+        double scaleX = getFlipScale();
+        Graphics2D gFlip = (Graphics2D) g2.create();
+        gFlip.translate(x - cameraX, y - cameraY);
+        gFlip.scale(scaleX, 1);
+        gFlip.drawImage(img, -img.getWidth()/2, -img.getHeight()/2, null);
+        gFlip.dispose();
+    }
+
+    public void setTargetTile(int tx, int ty) { targetTileX = tx; targetTileY = ty; }
+    public void triggerFlip() { if(!flipping){ flipping=true; flipProgress=0; } }
+    public boolean isActive() { return active; }
+    public double getX() { return x; }
+    public double getY() { return y; }
+
     private void updateFlip() {
-
         if (!flipping) return;
-
         flipProgress += flipSpeed;
+        if (flipProgress >= 0.5 && flipProgress - flipSpeed < 0.5) flipped = !flipped;
+        if (flipProgress >= 1) { flipProgress = 0; flipping = false; }
+    }
 
-        if (flipProgress >= 0.5 && flipProgress - flipSpeed < 0.5) {
-            flipped = !flipped;
-        }
-
-        if (flipProgress >= 1) {
-            flipProgress = 0;
-            flipping = false;
-        }
+    private double getFlipScale() {
+        if (!flipping) return flipped ? -1 : 1;
+        double scale = flipProgress < 0.5 ? 1 - flipProgress*2 : (flipProgress-0.5)*2;
+        return flipped ? -scale : scale;
     }
 
     private void manualMove(MazeGenerator maze, Set<Point> visibleTiles, double sx, double sy) {
+        double len = Math.sqrt(sx*sx + sy*sy);
+        if (len > 1) { sx/=len; sy/=len; }
+        double moveSpeed = speed*3;
+        double nx = sx*moveSpeed, ny = sy*moveSpeed;
 
-        double len = Math.sqrt(sx * sx + sy * sy);
+        Rectangle nextX = new Rectangle((int)(x+nx-Game.TILE/4),(int)(y-Game.TILE/4),Game.TILE/2,Game.TILE/2);
+        Rectangle nextY = new Rectangle((int)(x-Game.TILE/4),(int)(y+ny-Game.TILE/4),Game.TILE/2,Game.TILE/2);
 
-        if (len > 1) {
-            sx /= len;
-            sy /= len;
-        }
+        boolean moved=false;
+        if (!maze.isColliding(nextX)) { x+=nx; moved=true; }
+        if (!maze.isColliding(nextY)) { y+=ny; moved=true; }
 
-        double moveSpeed = speed * 3;
+        // Update target tile after manual movement to avoid snapping back
+        targetTileX = (int)(x / Game.TILE);
+        targetTileY = (int)(y / Game.TILE);
 
-        double nx = sx * moveSpeed;
-        double ny = sy * moveSpeed;
-
-        Rectangle nextX = new Rectangle(
-                (int) (x + nx - Game.TILE / 4),
-                (int) (y - Game.TILE / 4),
-                Game.TILE / 2,
-                Game.TILE / 2
-        );
-
-        Rectangle nextY = new Rectangle(
-                (int) (x - Game.TILE / 4),
-                (int) (y + ny - Game.TILE / 4),
-                Game.TILE / 2,
-                Game.TILE / 2
-        );
-
-        boolean moved = false;
-
-        if (!maze.isColliding(nextX)) {
-            x += nx;
-            moved = true;
-        }
-
-        if (!maze.isColliding(nextY)) {
-            y += ny;
-            moved = true;
-        }
-
-        if (moved && isVisible(visibleTiles) && settingsMenu.areFootstepsEnabled()) {
-            checkFootstep();
-        }
+        if (moved && isVisible(visibleTiles) && settingsMenu.areFootstepsEnabled()) checkFootstep();
     }
 
     private void aiMove(MazeGenerator maze, Set<Point> visibleTiles) {
+        double targetX = targetTileX*Game.TILE + Game.TILE/2;
+        double targetY = targetTileY*Game.TILE + Game.TILE/2;
+        double dx = targetX - x, dy = targetY - y;
+        double dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < speed) { x=targetX; y=targetY; } 
+        else {
+            double nx = dx/dist*speed;
+            double ny = dy/dist*speed;
 
-        double targetX = targetTileX * Game.TILE + Game.TILE / 2;
-        double targetY = targetTileY * Game.TILE + Game.TILE / 2;
+            Rectangle nextX = new Rectangle((int)(x+nx-Game.TILE/4),(int)(y-Game.TILE/4),Game.TILE/2,Game.TILE/2);
+            Rectangle nextY = new Rectangle((int)(x-Game.TILE/4),(int)(y+ny-Game.TILE/4),Game.TILE/2,Game.TILE/2);
 
-        double dx = targetX - x;
-        double dy = targetY - y;
+            boolean moved=false;
+            if (!maze.isColliding(nextX)) { x+=nx; moved=true; }
+            if (!maze.isColliding(nextY)) { y+=ny; moved=true; }
 
-        double dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < speed) {
-
-            x = targetX;
-            y = targetY;
-
-        } else {
-
-            double nx = dx / dist * speed;
-            double ny = dy / dist * speed;
-
-            Rectangle nextX = new Rectangle(
-                    (int) (x + nx - Game.TILE / 4),
-                    (int) (y - Game.TILE / 4),
-                    Game.TILE / 2,
-                    Game.TILE / 2
-            );
-
-            Rectangle nextY = new Rectangle(
-                    (int) (x - Game.TILE / 4),
-                    (int) (y + ny - Game.TILE / 4),
-                    Game.TILE / 2,
-                    Game.TILE / 2
-            );
-
-            boolean moved = false;
-
-            if (!maze.isColliding(nextX)) {
-                x += nx;
-                moved = true;
-            }
-
-            if (!maze.isColliding(nextY)) {
-                y += ny;
-                moved = true;
-            }
-
-            if (moved && isVisible(visibleTiles) && settingsMenu.areFootstepsEnabled()) {
-                checkFootstep();
-            }
+            if (moved && isVisible(visibleTiles) && settingsMenu.areFootstepsEnabled()) checkFootstep();
         }
     }
 
     private boolean isVisible(Set<Point> visibleTiles) {
-
-        Point currentTile = new Point((int) (x / Game.TILE), (int) (y / Game.TILE));
+        Point currentTile = new Point((int)(x/Game.TILE),(int)(y/Game.TILE));
         return visibleTiles.contains(currentTile);
     }
 
     private void checkFootstep() {
-
-        double dx = x - lastFootstepX;
-        double dy = y - lastFootstepY;
-
-        if (Math.sqrt(dx * dx + dy * dy) >= Game.TILE / 2.0) {
-
+        double dx = x-lastFootstepX, dy = y-lastFootstepY;
+        if (Math.sqrt(dx*dx + dy*dy) >= Game.TILE/2.0) {
             FootstepSound.play();
-
-            lastFootstepX = x;
-            lastFootstepY = y;
+            lastFootstepX = x; lastFootstepY = y;
         }
+    }
+
+    public double distance(double px, double py) {
+        double dx = px-x, dy = py-y;
+        return Math.sqrt(dx*dx + dy*dy);
     }
 
     @Override
