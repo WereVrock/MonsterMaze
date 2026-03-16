@@ -130,7 +130,7 @@ public class Game extends JPanel implements Runnable {
         if (settingsMenu.isToiletSystemEnabled()) {
             boolean onToilet = toilets.isPlayerOnToilet(player);
             if (controller.isXPressed() && onToilet) {
-                player.freeze(0.5);
+                player.freeze(1.5);
                 if (settingsMenu.isSpeedVfxEnabled()) {
                     speedFx.triggerToiletBurst(player.x, player.y);
                     speedFXSystem.triggerBoost(player.x, player.y);
