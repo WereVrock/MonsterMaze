@@ -37,6 +37,7 @@ private PoopBar poopBar = new PoopBar();
 private boolean wasOnToilet = false;
 
 private SpeedEffectVFX speedFx = new SpeedEffectVFX();
+private SpeedFXSystem speedFXSystem = new SpeedFXSystem();
 
 public Game() {
 
@@ -85,13 +86,20 @@ private void update() {
 
     player.update();
 
-    speedFx.update();
+    if (settingsMenu.isSpeedVfxEnabled()) {
+        speedFx.update();
+        speedFXSystem.update();
+    }
 
     if(player.getSpeedMultiplier() > 1.0){
 
         boolean high = player.getSpeedMultiplier() > 1.5;
 
-        speedFx.spawnBoostTrail(player.x,player.y,high);
+        if(settingsMenu.isSpeedVfxEnabled()){
+
+            speedFx.spawnBoostTrail(player.x,player.y,high);
+            speedFXSystem.spawnSpeedEffects(player.x,player.y,player.getSpeedMultiplier());
+        }
     }
 
     if (settingsMenu.isToiletSystemEnabled()) {
@@ -141,20 +149,23 @@ private void update() {
 
             if (onToilet) {
 
-                player.freeze(2);
+                player.freeze(0.5);
 
-                speedFx.triggerToiletBurst(player.x,player.y);
+                if(settingsMenu.isSpeedVfxEnabled()){
+                    speedFx.triggerToiletBurst(player.x,player.y);
+                    speedFXSystem.triggerBoost(player.x,player.y);
+                }
 
                 if (poopBar.isGreen()) {
 
                     PoopSound.play();
-                    player.triggerSpeedBoost(1.8,15);
+                    player.triggerSpeedBoost(1.8,10);
                     poopBar.reset();
 
                 } else if (poopBar.isRed()) {
 
                     PoopSound.play();
-                    player.triggerSpeedBoost(1.35,15);
+                    player.triggerSpeedBoost(1.35,10);
                     poopBar.reset();
                 }
             }
@@ -232,6 +243,7 @@ private void restartToSelection() {
     poopBar = new PoopBar();
 
     speedFx = new SpeedEffectVFX();
+    speedFXSystem = new SpeedFXSystem();
 }
 
 private void checkVisibleTiles() {
@@ -369,7 +381,10 @@ protected void paintComponent(Graphics g) {
 
     happyFx.draw(g2, cameraX, cameraY);
 
-    speedFx.draw(g2,cameraX,cameraY);
+    if(settingsMenu.isSpeedVfxEnabled()){
+        speedFx.draw(g2,cameraX,cameraY);
+        speedFXSystem.draw(g2,cameraX,cameraY,playerImg,player.x,player.y,player.getSpeedMultiplier());
+    }
 
     int playerScreenX = (int) (player.x - cameraX - playerImg.getWidth() / 2);
     int playerScreenY = (int) (player.y - cameraY - playerImg.getHeight() / 2);
