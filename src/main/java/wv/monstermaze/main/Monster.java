@@ -22,6 +22,8 @@ public class Monster {
     private boolean joker;
     private boolean active = true;
 
+    private boolean driller; // New flag for driller behavior
+
     private final Random random = new Random();
 
     public Monster(double x, double y, BufferedImage img, SettingsMenu settingsMenu) {
@@ -38,6 +40,9 @@ public class Monster {
 
         this.joker = Math.random() < 0.2;
         if (joker) speed = 8;
+
+        this.driller = Math.random() < 0.05; // 5% chance to be a driller
+//        this.driller=true;
     }
 
     public void update(Game game) {
@@ -65,6 +70,8 @@ public class Monster {
             }
             aiMove(game.getMaze(), game.getVisibleTiles());
         }
+
+        if (driller) destroyWalls(game.getMaze()); // new driller behavior
     }
 
     public void draw(Graphics2D g2, double cameraX, double cameraY) {
@@ -81,6 +88,7 @@ public class Monster {
     public boolean isActive() { return active; }
     public double getX() { return x; }
     public double getY() { return y; }
+    public boolean isDriller() { return driller; } // optional getter
 
     private void updateFlip() {
         if (!flipping) return;
@@ -148,6 +156,25 @@ public class Monster {
         }
     }
 
+    private void destroyWalls(MazeGenerator maze) {
+    // Drill radius in tiles
+    int radius = 2;
+
+    // Monster center tile
+    int centerX = (int) (x / Game.TILE);
+    int centerY = (int) (y / Game.TILE);
+
+    // Loop over square around monster
+    for (int dx = -radius; dx <= radius; dx++) {
+        for (int dy = -radius; dy <= radius; dy++) {
+            int tx = centerX + dx;
+            int ty = centerY + dy;
+            if (maze.isWallTile(tx, ty)) {
+                maze.removeWall(tx, ty);
+            }
+        }
+    }
+}
     public double distance(double px, double py) {
         double dx = px-x, dy = py-y;
         return Math.sqrt(dx*dx + dy*dy);

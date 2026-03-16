@@ -1,8 +1,9 @@
 package wv.monstermaze.main;
 
 import java.awt.*;
-import java.util.*;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
 public class MazeGenerator {
 
@@ -71,7 +72,7 @@ public class MazeGenerator {
         int tx = (int) (px / Game.TILE);
         int ty = (int) (py / Game.TILE);
 
-        List<Point> list = new ArrayList<>();
+        java.util.List<Point> list = new java.util.ArrayList<>();
         for (Point p : corridor) {
             int d = Math.abs(p.x - tx) + Math.abs(p.y - ty);
             if (d >= minTiles)
@@ -81,5 +82,9 @@ public class MazeGenerator {
         if (list.isEmpty()) return null;
 
         return list.get(rand.nextInt(list.size()));
+    }
+
+    public void removeWall(int x, int y) {
+        corridor.add(new Point(x, y));
     }
 }
