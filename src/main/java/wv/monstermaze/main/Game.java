@@ -3,17 +3,16 @@ package wv.monstermaze.main;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Game extends JPanel implements Runnable {
 
     public static final int TILE = 96;
     public static final int WIDTH = Toolkit.getDefaultToolkit().getScreenSize().width / TILE + 2;
     public static final int HEIGHT = Toolkit.getDefaultToolkit().getScreenSize().height / TILE + 2;
-
     private static final int VIEW_PADDING = 4;
 
     private Player player;
@@ -21,7 +20,7 @@ public class Game extends JPanel implements Runnable {
 
     private BufferedImage playerImg;
     private List<BufferedImage> playerImages;
-    private List<ImageLoader.LoadedImage> monsterImages;  // updated to LoadedImage
+    MonsterSpawner monsterSpawner;
 
     private boolean selectingPlayer = true;
     private int playerSelectionIndex = 0;
@@ -36,7 +35,6 @@ public class Game extends JPanel implements Runnable {
 
     private ToiletManager toilets = new ToiletManager();
     private PoopBar poopBar = new PoopBar();
-
     private SpeedEffectVFX speedFx = new SpeedEffectVFX();
     private SpeedFXSystem speedFXSystem = new SpeedFXSystem();
 
@@ -44,11 +42,8 @@ public class Game extends JPanel implements Runnable {
     private double cameraY;
     private double cameraZoom = 1.0;
 
-    public MonsterSpawner monsterSpawner;
-
     public Game() {
         setPreferredSize(Toolkit.getDefaultToolkit().getScreenSize());
-
         maze = new MazeGenerator();
         player = new Player(2 * TILE + TILE / 2, 2 * TILE + TILE / 2);
 
@@ -62,18 +57,17 @@ public class Game extends JPanel implements Runnable {
         playerImages = new ArrayList<>();
         for (ImageLoader.LoadedImage li : loadedPlayers) playerImages.add(li.image);
 
-        // --- load monster images (with VIP support) ---
-        monsterImages = loader.loadImages("monsters", TILE);
-
         if (!playerImages.isEmpty()) playerImg = playerImages.get(0);
+
+        // --- load monster images through centralized loader ---
+        ImageLoader.MonsterImagePool monsterPool = loader.setupMonsterImages(TILE);
+        monsterSpawner = new MonsterSpawner(this, monsterPool);
 
         selectionManager = new PlayerSelectionManager(playerImages);
         settingsMenu = new SettingsMenu();
 
         cameraX = player.x - WIDTH * TILE / 2;
         cameraY = player.y - HEIGHT * TILE / 2;
-
-        monsterSpawner = new MonsterSpawner(this, monsterImages);
 
         new Thread(this).start();
     }
@@ -128,7 +122,6 @@ public class Game extends JPanel implements Runnable {
         }
 
         updatePlayerMovement();
-
         maze.ensureArea(player.x, player.y);
         checkVisibleTiles();
 
@@ -153,7 +146,6 @@ public class Game extends JPanel implements Runnable {
         }
 
         monsterSpawner.updateMonsters(happyFx);
-
         happyFx.update();
     }
 
@@ -199,11 +191,12 @@ public class Game extends JPanel implements Runnable {
         cameraY = player.y - HEIGHT*TILE/2;
         cameraZoom = 1.0;
 
-        monsterSpawner = new MonsterSpawner(this, monsterImages);
+        ImageLoader loader = new ImageLoader();
+        ImageLoader.MonsterImagePool monsterPool = loader.setupMonsterImages(TILE);
+        monsterSpawner = new MonsterSpawner(this, monsterPool);
     }
 
     private void checkVisibleTiles() {
-
         int screenCenterX = WIDTH * TILE / 2;
         int screenCenterY = HEIGHT * TILE / 2;
 
@@ -222,17 +215,12 @@ public class Game extends JPanel implements Runnable {
         int endY = baseTileY + HEIGHT + VIEW_PADDING;
 
         Set<Point> newVisible = new HashSet<>();
-
         for (int y = startY; y < endY; y++) {
             for (int x = startX; x < endX; x++) {
-
                 Point p = new Point(x, y);
                 newVisible.add(p);
-
-                if (!visibleTiles.contains(p)) {
-                    if (settingsMenu.isToiletSystemEnabled())
-                        toilets.onTileGenerated(x, y, maze);
-                }
+                if (!visibleTiles.contains(p) && settingsMenu.isToiletSystemEnabled())
+                    toilets.onTileGenerated(x, y, maze);
             }
         }
 
@@ -242,7 +230,6 @@ public class Game extends JPanel implements Runnable {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
         Graphics2D g2 = (Graphics2D) g;
 
         int screenW = getWidth();
@@ -262,20 +249,15 @@ public class Game extends JPanel implements Runnable {
 
         for (int wy = baseTileY - VIEW_PADDING; wy < baseTileY + HEIGHT + VIEW_PADDING; wy++) {
             for (int wx = baseTileX - VIEW_PADDING; wx < baseTileX + WIDTH + VIEW_PADDING; wx++) {
-
                 int sx = wx * TILE - (int) cameraX;
                 int sy = wy * TILE - (int) cameraY;
-
                 g2.setColor(maze.isWallTile(wx, wy) ? Color.DARK_GRAY : Color.GRAY);
                 g2.fillRect(sx, sy, TILE, TILE);
             }
         }
 
-        if (settingsMenu.isToiletSystemEnabled())
-            toilets.draw(g2, cameraX, cameraY);
-
+        if (settingsMenu.isToiletSystemEnabled()) toilets.draw(g2, cameraX, cameraY);
         monsterSpawner.drawMonsters(g2, cameraX, cameraY);
-
         happyFx.draw(g2, cameraX, cameraY);
 
         if (settingsMenu.isSpeedVfxEnabled()) {
@@ -284,9 +266,7 @@ public class Game extends JPanel implements Runnable {
         }
 
         double tilt = 0;
-        if (settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0) {
-            tilt = controller.getLX() * 0.22;
-        }
+        if (settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0) tilt = controller.getLX() * 0.22;
 
         Graphics2D gPlayer = (Graphics2D) g2.create();
         gPlayer.translate(player.x - cameraX, player.y - cameraY);
@@ -311,14 +291,10 @@ public class Game extends JPanel implements Runnable {
         JFrame f = new JFrame("Labyrinth");
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setUndecorated(true);
-
         GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-
         Game game = new Game();
         f.add(game);
-
         device.setFullScreenWindow(f);
-
         f.validate();
     }
 }

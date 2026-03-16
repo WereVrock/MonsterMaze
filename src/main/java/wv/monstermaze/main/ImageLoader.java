@@ -19,63 +19,10 @@ public class ImageLoader {
         }
     }
 
-    public List<LoadedImage> loadImages(String folderName, int tileSize) {
-        List<LoadedImage> images = new ArrayList<>();
-
-        try {
-            File folder = new File(folderName);
-            if (!folder.exists()) {
-                System.out.println(folderName + " folder not found: " + folder.getAbsolutePath());
-                return images;
-            }
-
-            File[] files = folder.listFiles();
-            if (files == null || files.length == 0) {
-                System.out.println(folderName + " folder empty.");
-                return images;
-            }
-
-            for (File f : files) {
-                try {
-                    if (!f.isFile()) continue;
-                    BufferedImage img = ImageIO.read(f);
-                    if (img != null) {
-                        boolean vip = folderName.toLowerCase().contains("vip");
-                        images.add(new LoadedImage(scaleImage(img, tileSize, tileSize), vip));
-                        System.out.println("Loaded " + folderName + " image: " + f.getName() + (vip ? " [VIP]" : ""));
-                    }
-                } catch (Exception e) {
-                    System.out.println("Failed loading: " + f.getName());
-                }
-            }
-
-            // also load VIP subfolder if exists
-            File vipFolder = new File(folder, "vip");
-            if (vipFolder.exists() && vipFolder.isDirectory()) {
-                File[] vipFiles = vipFolder.listFiles();
-                if (vipFiles != null) {
-                    for (File f : vipFiles) {
-                        try {
-                            if (!f.isFile()) continue;
-                            BufferedImage img = ImageIO.read(f);
-                            if (img != null) {
-                                images.add(new LoadedImage(scaleImage(img, tileSize, tileSize), true));
-                                System.out.println("Loaded VIP image: " + f.getName());
-                            }
-                        } catch (Exception e) {
-                            System.out.println("Failed loading VIP image: " + f.getName());
-                        }
-                    }
-                }
-            }
-
-            System.out.println("Total " + folderName + " images loaded: " + images.size());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return images;
+    public static class MonsterImagePool {
+        public final List<LoadedImage> normal = new ArrayList<>();
+        public final List<LoadedImage> vip = new ArrayList<>();
+        public final List<LoadedImage> misc = new ArrayList<>();
     }
 
     private BufferedImage scaleImage(BufferedImage original, int maxWidth, int maxHeight) {
@@ -90,5 +37,73 @@ public class ImageLoader {
         g2.drawImage(original, 0, 0, newWidth, newHeight, null);
         g2.dispose();
         return scaled;
+    }
+
+    private void loadSubfolder(File parent, String subfolderName, List<LoadedImage> targetList, int tileSize, boolean vip) {
+        File folder = new File(parent, subfolderName);
+        if (folder.exists() && folder.isDirectory()) {
+            File[] files = folder.listFiles();
+            if (files != null) {
+                for (File f : files) {
+                    try {
+                        if (!f.isFile()) continue;
+                        BufferedImage img = ImageIO.read(f);
+                        if (img != null) {
+                            targetList.add(new LoadedImage(scaleImage(img, tileSize, tileSize), vip));
+                            System.out.println("Loaded " + subfolderName + " image: " + f.getName() + (vip ? " [VIP]" : ""));
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Failed loading " + subfolderName + " image: " + f.getName());
+                    }
+                }
+            }
+        }
+    }
+
+    private void loadFolderImages(File folder, List<LoadedImage> targetList, int tileSize, boolean vip) {
+        if (folder.exists() && folder.isDirectory()) {
+            File[] files = folder.listFiles();
+            if (files != null) {
+                for (File f : files) {
+                    try {
+                        if (!f.isFile()) continue;
+                        BufferedImage img = ImageIO.read(f);
+                        if (img != null) {
+                            targetList.add(new LoadedImage(scaleImage(img, tileSize, tileSize), vip));
+                            System.out.println("Loaded folder image: " + f.getName() + (vip ? " [VIP]" : ""));
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Failed loading image: " + f.getName());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Main setup method for monster images. Scans monsters folder for normal, vip, and misc.
+     */
+    public MonsterImagePool setupMonsterImages(int tileSize) {
+        MonsterImagePool pool = new MonsterImagePool();
+        File monstersFolder = new File("monsters");
+
+        loadFolderImages(monstersFolder, pool.normal, tileSize, false);
+        loadSubfolder(monstersFolder, "vip", pool.vip, tileSize, true);
+        loadSubfolder(monstersFolder, "misc", pool.misc, tileSize, false);
+
+        System.out.println("Monster setup completed: normal=" + pool.normal.size()
+                + ", vip=" + pool.vip.size() + ", misc=" + pool.misc.size());
+        return pool;
+    }
+
+    /**
+     * General purpose image loader (player etc.)
+     */
+    public List<LoadedImage> loadImages(String folderName, int tileSize) {
+        List<LoadedImage> images = new ArrayList<>();
+        File folder = new File(folderName);
+        loadFolderImages(folder, images, tileSize, folderName.toLowerCase().contains("vip"));
+        loadSubfolder(folder, "vip", images, tileSize, true);
+        return images;
     }
 }
