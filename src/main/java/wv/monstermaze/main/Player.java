@@ -23,6 +23,16 @@ public class Player {
 
     public void update(){
         speedBoost.update();
+        updateWooshSound();
+    }
+
+    private void updateWooshSound() {
+        double multiplier = getSpeedMultiplier();
+        if(multiplier > 1.0) {
+            SpeedWooshSound.start(multiplier - 1.0); // strength proportional to boost
+        } else {
+            SpeedWooshSound.update(0); // triggers fadeout
+        }
     }
 
     public boolean isFrozen(){
