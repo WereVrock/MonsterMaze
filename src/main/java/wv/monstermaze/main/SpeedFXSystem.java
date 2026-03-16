@@ -37,6 +37,23 @@ public class SpeedFXSystem {
         }
     }
 
+    private static class Dust {
+
+        double x;
+        double y;
+        double vx;
+        double vy;
+        int life;
+
+        Dust(double x,double y,double vx,double vy){
+            this.x=x;
+            this.y=y;
+            this.vx=vx;
+            this.vy=vy;
+            this.life=18;
+        }
+    }
+
     private static class Shockwave {
 
         double x;
@@ -47,6 +64,7 @@ public class SpeedFXSystem {
 
     private List<AfterImage> ghosts = new ArrayList<>();
     private List<SpeedLine> lines = new ArrayList<>();
+    private List<Dust> dust = new ArrayList<>();
     private List<Shockwave> waves = new ArrayList<>();
 
     private Random rand = new Random();
@@ -58,6 +76,17 @@ public class SpeedFXSystem {
         s.y = y;
 
         waves.add(s);
+
+        for(int i=0;i<12;i++){
+
+            double angle = rand.nextDouble()*Math.PI*2;
+            double speed = 2 + rand.nextDouble()*2;
+
+            double vx = Math.cos(angle)*speed;
+            double vy = Math.sin(angle)*speed;
+
+            dust.add(new Dust(x,y,vx,vy));
+        }
     }
 
     public void spawnSpeedEffects(double x,double y,double speedMult){
@@ -72,6 +101,14 @@ public class SpeedFXSystem {
         double vy = Math.sin(angle) * -6;
 
         lines.add(new SpeedLine(x,y,vx,vy));
+
+        if(rand.nextDouble() < 0.4){
+
+            double dvx = (rand.nextDouble()-0.5)*2;
+            double dvy = (rand.nextDouble()-0.5)*2;
+
+            dust.add(new Dust(x,y,dvx,dvy));
+        }
     }
 
     public void update(){
@@ -104,6 +141,25 @@ public class SpeedFXSystem {
             }
         }
 
+        Iterator<Dust> di = dust.iterator();
+
+        while(di.hasNext()){
+
+            Dust d = di.next();
+
+            d.x += d.vx;
+            d.y += d.vy;
+
+            d.vx *= 0.9;
+            d.vy *= 0.9;
+
+            d.life--;
+
+            if(d.life <= 0){
+                di.remove();
+            }
+        }
+
         Iterator<Shockwave> wi = waves.iterator();
 
         while(wi.hasNext()){
@@ -119,7 +175,7 @@ public class SpeedFXSystem {
         }
     }
 
-    public void draw(Graphics2D g,double camX,double camY,BufferedImage playerImg,double px,double py,double speedMult){
+    public void draw(Graphics2D g,double camX,double camY,BufferedImage playerImg,double px,double py){
 
         for(AfterImage a : ghosts){
 
@@ -137,6 +193,8 @@ public class SpeedFXSystem {
             g.setComposite(old);
         }
 
+        g.setColor(Color.WHITE);
+
         for(SpeedLine l : lines){
 
             int sx = (int)(l.x - camX);
@@ -145,56 +203,29 @@ public class SpeedFXSystem {
             int ex = (int)(sx + l.vx*4);
             int ey = (int)(sy + l.vy*4);
 
-            float alpha = l.life / 20f;
-
-            Composite old = g.getComposite();
-
-            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-
-            g.setColor(Color.WHITE);
             g.drawLine(sx,sy,ex,ey);
-
-            g.setComposite(old);
         }
+
+        g.setColor(new Color(200,200,200));
+
+        for(Dust d : dust){
+
+            int sx = (int)(d.x - camX);
+            int sy = (int)(d.y - camY);
+
+            g.fillOval(sx-2,sy-2,4,4);
+        }
+
+        g.setColor(Color.WHITE);
 
         for(Shockwave s : waves){
 
             int sx = (int)(s.x - camX);
             int sy = (int)(s.y - camY);
 
-            float alpha = s.life / 25f;
-
-            Composite old = g.getComposite();
-
-            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-
-            g.setColor(Color.WHITE);
-
             int r = (int)s.radius;
 
             g.drawOval(sx-r,sy-r,r*2,r*2);
-
-            g.setComposite(old);
-        }
-
-        if(speedMult > 1.0){
-
-            int sx = (int)(px - camX);
-            int sy = (int)(py - camY);
-
-            int r = 30;
-
-            Color aura = speedMult > 1.5 ? Color.GREEN : Color.RED;
-
-            Composite old = g.getComposite();
-
-            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,0.35f));
-
-            g.setColor(aura);
-
-            g.fillOval(sx-r,sy-r,r*2,r*2);
-
-            g.setComposite(old);
         }
     }
 }

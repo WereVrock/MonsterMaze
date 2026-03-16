@@ -39,381 +39,428 @@ private boolean wasOnToilet = false;
 private SpeedEffectVFX speedFx = new SpeedEffectVFX();
 private SpeedFXSystem speedFXSystem = new SpeedFXSystem();
 
+private double cameraX = 0;
+private double cameraY = 0;
+
 public Game() {
 
-    setPreferredSize(Toolkit.getDefaultToolkit().getScreenSize());
 
-    maze = new MazeGenerator();
-    player = new Player(2 * TILE + TILE / 2, 2 * TILE + TILE / 2);
+setPreferredSize(Toolkit.getDefaultToolkit().getScreenSize());
 
-    controller = new ControllerInput();
-    happyFx = new HappyBumpEffect();
+maze = new MazeGenerator();
+player = new Player(2 * TILE + TILE / 2, 2 * TILE + TILE / 2);
 
-    ImageLoader loader = new ImageLoader();
+controller = new ControllerInput();
+happyFx = new HappyBumpEffect();
 
-    playerImages = loader.loadImages("player", TILE);
-    monsterImages = loader.loadImages("monsters", TILE);
+ImageLoader loader = new ImageLoader();
 
-    if (!playerImages.isEmpty()) {
-        playerImg = playerImages.get(0);
-    }
+playerImages = loader.loadImages("player", TILE);
+monsterImages = loader.loadImages("monsters", TILE);
 
-    selectionManager = new PlayerSelectionManager(playerImages);
-    settingsMenu = new SettingsMenu();
+if (!playerImages.isEmpty()) {
+    playerImg = playerImages.get(0);
+}
 
-    new Thread(this).start();
+selectionManager = new PlayerSelectionManager(playerImages);
+settingsMenu = new SettingsMenu();
+
+new Thread(this).start();
+
+
 }
 
 @Override
 public void run() {
 
-    while (true) {
 
-        update();
-        repaint();
+while (true) {
 
-        try {
-            Thread.sleep(16);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    update();
+    repaint();
+
+    try {
+        Thread.sleep(16);
+    } catch (Exception e) {
+        e.printStackTrace();
     }
+}
+
+
 }
 
 private void update() {
 
-    controller.poll();
 
-    player.update();
+controller.poll();
 
-    if (settingsMenu.isSpeedVfxEnabled()) {
-        speedFx.update();
-        speedFXSystem.update();
+player.update();
+
+if (settingsMenu.isSpeedVfxEnabled()) {
+    speedFx.update();
+    speedFXSystem.update();
+}
+
+if(player.getSpeedMultiplier() > 1.0){
+
+    boolean high = player.getSpeedMultiplier() > 1.5;
+
+    if(settingsMenu.isSpeedVfxEnabled()){
+        speedFx.spawnBoostTrail(player.x,player.y,high);
+        speedFXSystem.spawnSpeedEffects(player.x,player.y,player.getSpeedMultiplier());
+    }
+}
+
+if (settingsMenu.isToiletSystemEnabled()) {
+    poopBar.update();
+}
+
+if (controller.getLeftTrigger() > 0.7f) {
+    settingsMenu.toggleActive();
+}
+
+if (settingsMenu.isActive()) {
+    settingsMenu.update(controller.getLX(), controller.getLY(), controller.getRightTrigger() > 0.7f);
+    return;
+}
+
+if (controller.getRightTrigger() > 0.7f) {
+    restartToSelection();
+    return;
+}
+
+if (selectingPlayer) {
+
+    if (selectionManager.updateSelection(controller.getLX(), controller.getLY(), lastInputTime)) {
+
+        playerSelectionIndex = selectionManager.getSelectionIndex();
+        playerImg = playerImages.get(playerSelectionIndex);
+        selectingPlayer = false;
+
+    } else {
+        lastInputTime = System.currentTimeMillis();
     }
 
-    if(player.getSpeedMultiplier() > 1.0){
+    return;
+}
 
-        boolean high = player.getSpeedMultiplier() > 1.5;
+updatePlayerMovement();
 
-        if(settingsMenu.isSpeedVfxEnabled()){
+maze.ensureArea(player.x, player.y);
 
-            speedFx.spawnBoostTrail(player.x,player.y,high);
-            speedFXSystem.spawnSpeedEffects(player.x,player.y,player.getSpeedMultiplier());
-        }
-    }
+checkVisibleTiles();
 
-    if (settingsMenu.isToiletSystemEnabled()) {
-        poopBar.update();
-    }
+if (settingsMenu.isToiletSystemEnabled()) {
 
-    if (controller.getLeftTrigger() > 0.7f) {
-        settingsMenu.toggleActive();
-    }
+    boolean onToilet = toilets.isPlayerOnToilet(player);
 
-    if (settingsMenu.isActive()) {
-        settingsMenu.update(controller.getLX(), controller.getLY(), controller.getRightTrigger() > 0.7f);
-        return;
-    }
+    if (controller.isXPressed()) {
 
-    if (controller.getRightTrigger() > 0.7f) {
-        restartToSelection();
-        return;
-    }
+        if (onToilet) {
 
-    if (selectingPlayer) {
+            player.freeze(0.5);
 
-        if (selectionManager.updateSelection(controller.getLX(), controller.getLY(), lastInputTime)) {
+            if(settingsMenu.isSpeedVfxEnabled()){
+                speedFx.triggerToiletBurst(player.x,player.y);
+                speedFXSystem.triggerBoost(player.x,player.y);
+            }
 
-            playerSelectionIndex = selectionManager.getSelectionIndex();
-            playerImg = playerImages.get(playerSelectionIndex);
-            selectingPlayer = false;
+            if (poopBar.isGreen()) {
 
-        } else {
-            lastInputTime = System.currentTimeMillis();
-        }
+                PoopSound.play();
+                player.triggerSpeedBoost(1.8,10);
+                poopBar.reset();
 
-        return;
-    }
+            } else if (poopBar.isRed()) {
 
-    updatePlayerMovement();
-
-    maze.ensureArea(player.x, player.y);
-
-    checkVisibleTiles();
-
-    if (settingsMenu.isToiletSystemEnabled()) {
-
-        boolean onToilet = toilets.isPlayerOnToilet(player);
-
-        if (controller.isXPressed()) {
-
-            if (onToilet) {
-
-                player.freeze(0.5);
-
-                if(settingsMenu.isSpeedVfxEnabled()){
-                    speedFx.triggerToiletBurst(player.x,player.y);
-                    speedFXSystem.triggerBoost(player.x,player.y);
-                }
-
-                if (poopBar.isGreen()) {
-
-                    PoopSound.play();
-                    player.triggerSpeedBoost(1.8,10);
-                    poopBar.reset();
-
-                } else if (poopBar.isRed()) {
-
-                    PoopSound.play();
-                    player.triggerSpeedBoost(1.35,10);
-                    poopBar.reset();
-                }
+                PoopSound.play();
+                player.triggerSpeedBoost(1.35,10);
+                poopBar.reset();
             }
         }
-
-        wasOnToilet = onToilet;
     }
 
-    updateMonster();
+    wasOnToilet = onToilet;
+}
 
-    happyFx.update();
+updateMonster();
 
-    if (monster != null && player.distance(monster.x, monster.y) < 32) {
-        happyFx.trigger(monster.x, monster.y);
-        monster = null;
-    }
+happyFx.update();
+
+if (monster != null && player.distance(monster.x, monster.y) < 32) {
+    happyFx.trigger(monster.x, monster.y);
+    monster = null;
+}
+
+
 }
 
 private void updatePlayerMovement() {
 
-    if(player.isFrozen()) return;
 
-    double lx = controller.getLX();
-    double ly = -controller.getLY();
+if(player.isFrozen()) return;
 
-    if (Math.abs(lx) < 0.15) lx = 0;
-    if (Math.abs(ly) < 0.15) ly = 0;
+double lx = controller.getLX();
+double ly = -controller.getLY();
 
-    double len = Math.sqrt(lx * lx + ly * ly);
+if (Math.abs(lx) < 0.15) lx = 0;
+if (Math.abs(ly) < 0.15) ly = 0;
 
-    if (len > 1) {
-        lx /= len;
-        ly /= len;
-    }
+double len = Math.sqrt(lx * lx + ly * ly);
 
-    double speed = 4 * player.getSpeedMultiplier();
+if (len > 1) {
+    lx /= len;
+    ly /= len;
+}
 
-    double dx = lx * speed;
-    double dy = ly * speed;
+double speed = 4 * player.getSpeedMultiplier();
 
-    Rectangle nextPos = player.getBounds(player.x + dx, player.y + dy);
+double dx = lx * speed;
+double dy = ly * speed;
 
-    if (!maze.isColliding(nextPos)) {
+Rectangle nextPos = player.getBounds(player.x + dx, player.y + dy);
 
-        player.x += dx;
-        player.y += dy;
+if (!maze.isColliding(nextPos)) {
 
-    } else {
+    player.x += dx;
+    player.y += dy;
 
-        Rectangle nextX = player.getBounds(player.x + dx, player.y);
-        Rectangle nextY = player.getBounds(player.x, player.y + dy);
+} else {
 
-        if (!maze.isColliding(nextX)) player.x += dx;
-        if (!maze.isColliding(nextY)) player.y += dy;
-    }
+    Rectangle nextX = player.getBounds(player.x + dx, player.y);
+    Rectangle nextY = player.getBounds(player.x, player.y + dy);
 
-    if (settingsMenu.areFootstepsEnabled()) {
-        player.checkFootstep();
-    }
+    if (!maze.isColliding(nextX)) player.x += dx;
+    if (!maze.isColliding(nextY)) player.y += dy;
+}
+
+if (settingsMenu.areFootstepsEnabled()) {
+    player.checkFootstep();
+}
+
+
 }
 
 private void restartToSelection() {
 
-    selectingPlayer = true;
 
-    maze = new MazeGenerator();
-    player = new Player(2 * TILE + TILE / 2, 2 * TILE + TILE / 2);
-    monster = null;
+selectingPlayer = true;
 
-    visibleTiles.clear();
+maze = new MazeGenerator();
+player = new Player(2 * TILE + TILE / 2, 2 * TILE + TILE / 2);
+monster = null;
 
-    happyFx = new HappyBumpEffect();
+visibleTiles.clear();
 
-    toilets = new ToiletManager();
-    poopBar = new PoopBar();
+happyFx = new HappyBumpEffect();
 
-    speedFx = new SpeedEffectVFX();
-    speedFXSystem = new SpeedFXSystem();
+toilets = new ToiletManager();
+poopBar = new PoopBar();
+
+speedFx = new SpeedEffectVFX();
+speedFXSystem = new SpeedFXSystem();
+
+cameraX = player.x;
+cameraY = player.y;
+
+
 }
 
 private void checkVisibleTiles() {
 
-    int screenCenterX = WIDTH * TILE / 2;
-    int screenCenterY = HEIGHT * TILE / 2;
 
-    double cameraX = player.x - screenCenterX;
-    double cameraY = player.y - screenCenterY;
+int screenCenterX = WIDTH * TILE / 2;
+int screenCenterY = HEIGHT * TILE / 2;
 
-    int startX = (int) (cameraX / TILE) - 1;
-    int startY = (int) (cameraY / TILE) - 1;
+double targetX = player.x - screenCenterX;
+double targetY = player.y - screenCenterY;
 
-    int endX = startX + WIDTH + 2;
-    int endY = startY + HEIGHT + 2;
+cameraX += (targetX - cameraX) * 0.12;
+cameraY += (targetY - cameraY) * 0.12;
 
-    Set<Point> newVisible = new HashSet<>();
+int startX = (int) (cameraX / TILE) - 1;
+int startY = (int) (cameraY / TILE) - 1;
 
-    for (int y = startY; y < endY; y++) {
-        for (int x = startX; x < endX; x++) {
+int endX = startX + WIDTH + 2;
+int endY = startY + HEIGHT + 2;
 
-            Point p = new Point(x, y);
-            newVisible.add(p);
+Set<Point> newVisible = new HashSet<>();
 
-            if (!visibleTiles.contains(p)) {
+for (int y = startY; y < endY; y++) {
+    for (int x = startX; x < endX; x++) {
 
-                if (settingsMenu.isToiletSystemEnabled()) {
-                    toilets.onTileGenerated(x, y, maze);
-                }
+        Point p = new Point(x, y);
+        newVisible.add(p);
 
-                onTileEntered(p);
+        if (!visibleTiles.contains(p)) {
+
+            if (settingsMenu.isToiletSystemEnabled()) {
+                toilets.onTileGenerated(x, y, maze);
             }
+
+            onTileEntered(p);
         }
     }
+}
 
-    visibleTiles = newVisible;
+visibleTiles = newVisible;
+
+
 }
 
 private void onTileEntered(Point tile) {
 
-    if (monster != null) return;
-    if (maze.isWallTile(tile.x, tile.y)) return;
-    if (Math.random() > 0.05) return;
-    if (monsterImages.isEmpty()) return;
 
-    BufferedImage img = monsterImages.get(new java.util.Random().nextInt(monsterImages.size()));
+if (monster != null) return;
+if (maze.isWallTile(tile.x, tile.y)) return;
+if (Math.random() > 0.05) return;
+if (monsterImages.isEmpty()) return;
 
-    double mx = tile.x * TILE + TILE / 2;
-    double my = tile.y * TILE + TILE / 2;
+BufferedImage img = monsterImages.get(new java.util.Random().nextInt(monsterImages.size()));
 
-    monster = new Monster(mx, my, img, settingsMenu);
+double mx = tile.x * TILE + TILE / 2;
+double my = tile.y * TILE + TILE / 2;
+
+monster = new Monster(mx, my, img, settingsMenu);
+
+
 }
 
 private void updateMonster() {
 
-    if (monster == null) return;
 
-    if (controller.isXPressedController2()) {
-        monster.triggerFlip();
+if (monster == null) return;
+
+if (controller.isXPressedController2()) {
+    monster.triggerFlip();
+}
+
+if (Math.random() < 0.01) {
+
+    Point p = maze.randomCorridorFarFrom(monster.x, monster.y, 2);
+
+    if (p != null) {
+        monster.setTargetTile(p.x, p.y);
     }
+}
 
-    if (Math.random() < 0.01) {
+monster.update(maze, visibleTiles, controller.getLX2(), controller.getLY2());
 
-        Point p = maze.randomCorridorFarFrom(monster.x, monster.y, 2);
+if (player.distance(monster.x, monster.y) < 32) {
+    happyFx.trigger(monster.x, monster.y);
+    monster = null;
+    return;
+}
 
-        if (p != null) {
-            monster.setTargetTile(p.x, p.y);
-        }
-    }
+if (player.distance(monster.x, monster.y) > TILE * 25) {
+    monster = null;
+}
 
-    monster.update(maze, visibleTiles, controller.getLX2(), controller.getLY2());
 
-    if (player.distance(monster.x, monster.y) < 32) {
-        happyFx.trigger(monster.x, monster.y);
-        monster = null;
-        return;
-    }
-
-    if (player.distance(monster.x, monster.y) > TILE * 25) {
-        monster = null;
-    }
 }
 
 @Override
 protected void paintComponent(Graphics g) {
 
-    super.paintComponent(g);
 
-    Graphics2D g2 = (Graphics2D) g;
+super.paintComponent(g);
 
-    if (selectingPlayer) {
-        selectionManager.drawSelection(g2, getWidth(), getHeight(), TILE);
-        return;
+Graphics2D g2 = (Graphics2D) g;
+
+if (selectingPlayer) {
+    selectionManager.drawSelection(g2, getWidth(), getHeight(), TILE);
+    return;
+}
+
+for (int wy = (int) (cameraY / TILE) - 1; wy < (int) (cameraY / TILE) + HEIGHT + 1; wy++) {
+    for (int wx = (int) (cameraX / TILE) - 1; wx < (int) (cameraX / TILE) + WIDTH + 1; wx++) {
+
+        int sx = wx * TILE - (int) cameraX;
+        int sy = wy * TILE - (int) cameraY;
+
+        g2.setColor(maze.isWallTile(wx, wy) ? Color.DARK_GRAY : Color.GRAY);
+        g2.fillRect(sx, sy, TILE, TILE);
     }
+}
 
-    int screenCenterX = WIDTH * TILE / 2;
-    int screenCenterY = HEIGHT * TILE / 2;
+if (settingsMenu.isToiletSystemEnabled()) {
+    toilets.draw(g2, cameraX, cameraY);
+}
 
-    double cameraX = player.x - screenCenterX;
-    double cameraY = player.y - screenCenterY;
+if (monster != null) {
 
-    for (int wy = (int) (cameraY / TILE) - 1; wy < (int) (cameraY / TILE) + HEIGHT + 1; wy++) {
-        for (int wx = (int) (cameraX / TILE) - 1; wx < (int) (cameraX / TILE) + WIDTH + 1; wx++) {
+    double scaleX = monster.getFlipScale();
 
-            int sx = wx * TILE - (int) cameraX;
-            int sy = wy * TILE - (int) cameraY;
+    Graphics2D gFlip = (Graphics2D) g2.create();
 
-            g2.setColor(maze.isWallTile(wx, wy) ? Color.DARK_GRAY : Color.GRAY);
-            g2.fillRect(sx, sy, TILE, TILE);
-        }
-    }
+    gFlip.translate(monster.x - cameraX, monster.y - cameraY);
+    gFlip.scale(scaleX, 1);
 
-    if (settingsMenu.isToiletSystemEnabled()) {
-        toilets.draw(g2, cameraX, cameraY);
-    }
+    gFlip.drawImage(
+            monster.img,
+            -monster.img.getWidth() / 2,
+            -monster.img.getHeight() / 2,
+            null
+    );
 
-    if (monster != null) {
+    gFlip.dispose();
+}
 
-        double scaleX = monster.getFlipScale();
+happyFx.draw(g2, cameraX, cameraY);
 
-        Graphics2D gFlip = (Graphics2D) g2.create();
+if(settingsMenu.isSpeedVfxEnabled()){
+    speedFx.draw(g2,cameraX,cameraY);
+    speedFXSystem.draw(g2,cameraX,cameraY,playerImg,player.x,player.y);
+}
 
-        gFlip.translate(monster.x - cameraX, monster.y - cameraY);
-        gFlip.scale(scaleX, 1);
+double tilt = 0;
 
-        gFlip.drawImage(
-                monster.img,
-                -monster.img.getWidth() / 2,
-                -monster.img.getHeight() / 2,
-                null
-        );
+if(settingsMenu.isSpeedVfxEnabled()){
+    tilt = controller.getLX() * 0.15;
+}
 
-        gFlip.dispose();
-    }
+Graphics2D gPlayer = (Graphics2D) g2.create();
 
-    happyFx.draw(g2, cameraX, cameraY);
+gPlayer.translate(player.x - cameraX, player.y - cameraY);
+gPlayer.rotate(tilt);
 
-    if(settingsMenu.isSpeedVfxEnabled()){
-        speedFx.draw(g2,cameraX,cameraY);
-        speedFXSystem.draw(g2,cameraX,cameraY,playerImg,player.x,player.y,player.getSpeedMultiplier());
-    }
+gPlayer.drawImage(
+        playerImg,
+        -playerImg.getWidth()/2,
+        -playerImg.getHeight()/2,
+        null
+);
 
-    int playerScreenX = (int) (player.x - cameraX - playerImg.getWidth() / 2);
-    int playerScreenY = (int) (player.y - cameraY - playerImg.getHeight() / 2);
+gPlayer.dispose();
 
-    g2.drawImage(playerImg, playerScreenX, playerScreenY, null);
+if (settingsMenu.isToiletSystemEnabled()) {
+    poopBar.draw(g2, getWidth(), toilets.isPlayerOnToilet(player));
+}
 
-    if (settingsMenu.isToiletSystemEnabled()) {
-        poopBar.draw(g2, getWidth(), toilets.isPlayerOnToilet(player));
-    }
+if (settingsMenu.isActive()) {
+    settingsMenu.draw(g2, getWidth(), getHeight());
+}
 
-    if (settingsMenu.isActive()) {
-        settingsMenu.draw(g2, getWidth(), getHeight());
-    }
+
 }
 
 public static void main(String[] args) {
 
-    JFrame f = new JFrame("Labyrinth");
-    f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    f.setUndecorated(true);
 
-    GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+JFrame f = new JFrame("Labyrinth");
+f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+f.setUndecorated(true);
 
-    Game game = new Game();
+GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
 
-    f.add(game);
+Game game = new Game();
 
-    device.setFullScreenWindow(f);
+f.add(game);
 
-    f.validate();
+device.setFullScreenWindow(f);
+
+f.validate();
+
+
 }
 }
