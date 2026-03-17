@@ -118,7 +118,7 @@ public void draw(Graphics2D g2, int screenWidth, int screenHeight) {
     g2.drawString("ÇIKIŞ", x + 50, y + 210);
 
     g2.setFont(new Font("Arial",Font.ITALIC,14));
-    g2.drawString("LT ile kapat, RT ile seç", x + 50, y + 245);
+    g2.drawString("start ile kapat, RT ile seç", x + 50, y + 245);
 
 }
 

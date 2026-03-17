@@ -15,7 +15,7 @@ public class ControllerInput {
 
     private float lx;
     private float ly;
-    private float leftTrigger;
+    private float startbut;
     private float rightTrigger;
 
     private boolean xPressed;
@@ -69,7 +69,10 @@ public class ControllerInput {
 
             controllerLX = state.leftStickX;
             controllerLY = state.leftStickY;
-            controllerLT = state.leftTrigger;
+
+            // ❌ Disable real LT, ✅ use START as LT
+            controllerLT = state.start ? 1f : 0f;
+
             controllerRT = state.rightTrigger;
             controllerX = state.x;
         }
@@ -98,13 +101,15 @@ public class ControllerInput {
         lx = Math.abs(controllerLX) > Math.abs(keyLX) ? controllerLX : keyLX;
         ly = Math.abs(controllerLY) > Math.abs(keyLY) ? controllerLY : keyLY;
 
-        leftTrigger = Math.max(controllerLT, keyLT);
+        startbut = Math.max(controllerLT, keyLT);
         rightTrigger = Math.max(controllerRT, keyRT);
 
         boolean currentX = controllerX || keyX;
 
         xPressed = currentX && !lastX;
         lastX = currentX;
+
+        // ===== CONTROLLER 2 =====
 
         ControllerState state2 = controllers.getState(1);
 
@@ -152,8 +157,8 @@ public class ControllerInput {
         return ly;
     }
 
-    public float getLeftTrigger() {
-        return leftTrigger;
+    public float getStartButton() {
+        return startbut;
     }
 
     public float getRightTrigger() {

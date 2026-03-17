@@ -95,7 +95,7 @@ public class Game extends JPanel implements Runnable {
 
         if (settingsMenu.isToiletSystemEnabled()) poopBar.update();
 
-        if (controller.getLeftTrigger() > 0.7f) settingsMenu.toggleActive();
+        if (controller.getStartButton() > 0.7f) settingsMenu.toggleActive();
         if (settingsMenu.isActive()) {
             settingsMenu.update(controller.getLX(), controller.getLY(), controller.getRightTrigger() > 0.7f);
             return;
