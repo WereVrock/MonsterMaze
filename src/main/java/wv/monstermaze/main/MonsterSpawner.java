@@ -8,8 +8,8 @@ import java.util.Set;
 
 public class MonsterSpawner {
 
-    private final Game game;
-    private final ImageLoader.MonsterImagePool pool;
+    final Game game;
+    final ImageLoader.MonsterImagePool pool;
     private final Random random = new Random();
     private final List<Monster> monsters = new ArrayList<>();
     private final double DESPAWN_DISTANCE;
@@ -18,10 +18,15 @@ public class MonsterSpawner {
     private final DrillWallEffect drillEffect = new DrillWallEffect();
     private final TeleportSwapFX teleportFX = new TeleportSwapFX();
 
+    // NEW
+    private final PassiveMonsterSpawner passiveSpawner;
+
     public MonsterSpawner(Game game, ImageLoader.MonsterImagePool pool) {
         this.game = game;
         this.pool = pool;
         this.DESPAWN_DISTANCE = Game.TILE * Game.WIDTH * 1.5;
+
+        this.passiveSpawner = new PassiveMonsterSpawner(this, game);
     }
 
     public List<Monster> getMonsters() { return monsters; }
@@ -36,6 +41,8 @@ public class MonsterSpawner {
     public void updateMonsters(HappyBumpEffect happyFx) {
 
         detectNewVisibleTiles();
+
+        passiveSpawner.update(); // <-- clean call, no params
 
         List<Monster> toRemove = new ArrayList<>();
         Player player = game.getPlayer();

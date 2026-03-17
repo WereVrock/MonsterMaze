@@ -38,7 +38,7 @@ public class Game extends JPanel implements Runnable {
     private SpeedEffectVFX speedFx = new SpeedEffectVFX();
     private SpeedFXSystem speedFXSystem = new SpeedFXSystem();
 
-    private Camera camera;
+    Camera camera;
 
     public Game() {
         setPreferredSize(Toolkit.getDefaultToolkit().getScreenSize());
