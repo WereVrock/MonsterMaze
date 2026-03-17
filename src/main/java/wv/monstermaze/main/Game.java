@@ -34,7 +34,7 @@ public class Game extends JPanel implements Runnable {
 
     private ToiletManager toilets = new ToiletManager();
     private PoopBar poopBar = new PoopBar();
-    private SpeedParticles speedFx = new SpeedParticles();
+    private SpeedParticles speedParticles = new SpeedParticles();
     private SpeedFXSystem speedFXSystem = new SpeedFXSystem();
     private ToiletActionHandler toiletHandler;
 
@@ -67,7 +67,7 @@ public class Game extends JPanel implements Runnable {
         camera = new Camera(this, WIDTH, HEIGHT, TILE);
 
         // --- initialize modular toilet handler ---
-        toiletHandler = new ToiletActionHandler(poopBar, speedFx, speedFXSystem, toilets);
+        toiletHandler = new ToiletActionHandler(poopBar, speedParticles, speedFXSystem, toilets);
 
         new Thread(this).start();
     }
@@ -86,13 +86,13 @@ public class Game extends JPanel implements Runnable {
         player.update();
 
         if (settingsMenu.isSpeedVfxEnabled()) {
-            speedFx.update();
+            speedParticles.update();
             speedFXSystem.update();
         }
 
         if (player.getSpeedMultiplier() > 1.0 && settingsMenu.isSpeedVfxEnabled()) {
             boolean high = player.getSpeedMultiplier() > 1.5;
-            speedFx.spawnBoostTrail(player.x, player.y, high);
+            speedParticles.spawnBoostTrail(player.x, player.y, high);
             speedFXSystem.spawnSpeedEffects(player.x, player.y, player.getSpeedMultiplier());
         }
 
@@ -168,9 +168,9 @@ public class Game extends JPanel implements Runnable {
         happyFx = new HappyBumpEffect();
         toilets = new ToiletManager();
         poopBar = new PoopBar();
-        speedFx = new SpeedParticles();
+        speedParticles = new SpeedParticles();
         speedFXSystem = new SpeedFXSystem();
-        toiletHandler = new ToiletActionHandler(poopBar, speedFx, speedFXSystem, toilets);
+        toiletHandler = new ToiletActionHandler(poopBar, speedParticles, speedFXSystem, toilets);
 
         ImageLoader loader = new ImageLoader();
         ImageLoader.MonsterImagePool monsterPool = loader.setupMonsterImages(TILE);
@@ -233,8 +233,9 @@ public class Game extends JPanel implements Runnable {
         happyFx.draw(g2, camera.getX(), camera.getY());
 
         if (settingsMenu.isSpeedVfxEnabled()) {
-            speedFx.draw(g2, camera.getX(), camera.getY());
+            
             speedFXSystem.draw(g2, camera.getX(), camera.getY(), playerImg, player.x, player.y);
+            speedParticles.draw(g2, camera.getX(), camera.getY());
         }
 
         double tilt = 0;
