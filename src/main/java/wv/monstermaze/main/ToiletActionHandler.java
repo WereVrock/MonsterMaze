@@ -38,10 +38,10 @@ public class ToiletActionHandler {
         // Trigger speed boost depending on PoopBar color
         if (poopBar.isGreen()) {
             PoopSound.play();
-            player.triggerSpeedBoost(1.8, 10);
+            player.triggerSpeedBoost(1.8, 10,SpeedBoost.Type.GREEN);
         } else if (poopBar.isRed()) {
             PoopSound.play();
-            player.triggerSpeedBoost(1.35, 10);
+            player.triggerSpeedBoost(1.35, 10,SpeedBoost.Type.RED);
         }
 
         poopBar.reset();

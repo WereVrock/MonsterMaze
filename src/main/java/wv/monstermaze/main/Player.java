@@ -11,7 +11,7 @@ public class Player {
     private double lastFootstepX;
     private double lastFootstepY;
 
-    private SpeedBoost speedBoost = new SpeedBoost();
+    public SpeedBoost speedBoost = new SpeedBoost();
     private PlayerFreeze freeze = new PlayerFreeze();
 
     public Player(double x, double y) {
@@ -47,9 +47,9 @@ public class Player {
         return speedBoost.getMultiplier();
     }
 
-    public void triggerSpeedBoost(double mult,int seconds){
-        speedBoost.trigger(mult,seconds);
-    }
+    public void triggerSpeedBoost(double mult, int seconds, SpeedBoost.Type type){
+    speedBoost.trigger(mult, seconds, type);
+}
 
     public double distance(double ox, double oy) {
         double dx = x - ox;

@@ -133,32 +133,64 @@ public class Game extends JPanel implements Runnable {
     }
 
     private void updatePlayerMovement() {
-        if (player.isFrozen()) return;
+    if (player.isFrozen()) return;
 
-        double lx = controller.getLX();
-        double ly = -controller.getLY();
+    double lx = controller.getLX();
+    double ly = -controller.getLY();
 
-        if (Math.abs(lx) < 0.15) lx = 0;
-        if (Math.abs(ly) < 0.15) ly = 0;
+    if (Math.abs(lx) < 0.15) lx = 0;
+    if (Math.abs(ly) < 0.15) ly = 0;
 
-        double len = Math.sqrt(lx * lx + ly * ly);
-        if (len > 1) { lx /= len; ly /= len; }
+    double len = Math.sqrt(lx * lx + ly * ly);
+    if (len > 1) { lx /= len; ly /= len; }
 
-        double speed = 4 * player.getSpeedMultiplier();
-        double dx = lx * speed;
-        double dy = ly * speed;
+    double speed = 4 * player.getSpeedMultiplier();
+    double dx = lx * speed;
+    double dy = ly * speed;
 
-        Rectangle nextPos = player.getBounds(player.x + dx, player.y + dy);
-        if (!maze.isColliding(nextPos)) { player.x += dx; player.y += dy; }
-        else {
-            Rectangle nextX = player.getBounds(player.x + dx, player.y);
-            Rectangle nextY = player.getBounds(player.x, player.y + dy);
-            if (!maze.isColliding(nextX)) player.x += dx;
-            if (!maze.isColliding(nextY)) player.y += dy;
+    Rectangle nextPos = player.getBounds(player.x + dx, player.y + dy);
+    boolean collided = maze.isColliding(nextPos);
+
+    if (!collided) {
+        player.x += dx;
+        player.y += dy;
+    } else {
+        // check individual axis collisions
+        Rectangle nextX = player.getBounds(player.x + dx, player.y);
+        Rectangle nextY = player.getBounds(player.x, player.y + dy);
+
+        boolean collideX = maze.isColliding(nextX);
+        boolean collideY = maze.isColliding(nextY);
+
+        // If boost is active, destroy walls in the collision path
+        if (player.speedBoost.isGreenBoost()) {
+            if (collideX) destroyWallsAlong(nextX);
+            if (collideY) destroyWallsAlong(nextY);
+            player.x += dx;
+            player.y += dy;
+        } else {
+            if (!collideX) player.x += dx;
+            if (!collideY) player.y += dy;
         }
-
-        if (settingsMenu.areFootstepsEnabled()) player.checkFootstep();
     }
+
+    if (settingsMenu.areFootstepsEnabled()) player.checkFootstep();
+}
+
+private void destroyWallsAlong(Rectangle r) {
+    int startX = (int) Math.floor((double) r.x / Game.TILE);
+    int startY = (int) Math.floor((double) r.y / Game.TILE);
+    int endX = (int) Math.floor((double) (r.x + r.width - 1) / Game.TILE);
+    int endY = (int) Math.floor((double) (r.y + r.height - 1) / Game.TILE);
+
+    for (int tx = startX; tx <= endX; tx++) {
+        for (int ty = startY; ty <= endY; ty++) {
+            if (maze.isWallTile(tx, ty)) {
+                maze.removeWall(tx, ty);
+            }
+        }
+    }
+}
 
     private void restartToSelection() {
         selectingPlayer = true;
