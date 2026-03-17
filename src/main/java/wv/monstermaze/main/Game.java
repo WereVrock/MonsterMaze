@@ -3,8 +3,7 @@ package wv.monstermaze.main;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
 import java.util.Set;
 
@@ -37,6 +36,7 @@ public class Game extends JPanel implements Runnable {
     private PoopBar poopBar = new PoopBar();
     private SpeedEffectVFX speedFx = new SpeedEffectVFX();
     private SpeedFXSystem speedFXSystem = new SpeedFXSystem();
+    private ToiletActionHandler toiletHandler;
 
     Camera camera;
 
@@ -65,6 +65,9 @@ public class Game extends JPanel implements Runnable {
         settingsMenu = new SettingsMenu();
 
         camera = new Camera(this, WIDTH, HEIGHT, TILE);
+
+        // --- initialize modular toilet handler ---
+        toiletHandler = new ToiletActionHandler(poopBar, speedFx, speedFXSystem, toilets);
 
         new Thread(this).start();
     }
@@ -118,24 +121,9 @@ public class Game extends JPanel implements Runnable {
         maze.ensureArea(player.x, player.y);
         updateVisibleTiles();
 
-        if (settingsMenu.isToiletSystemEnabled()) {
-            boolean onToilet = toilets.isPlayerOnToilet(player);
-            if (controller.isXPressed() && onToilet) {
-                player.freeze(1.5);
-                if (settingsMenu.isSpeedVfxEnabled()) {
-                    speedFx.triggerToiletBurst(player.x, player.y);
-                    speedFXSystem.triggerBoost(player.x, player.y);
-                }
-                if (poopBar.isGreen()) {
-                    PoopSound.play();
-                    player.triggerSpeedBoost(1.8, 10);
-                    poopBar.reset();
-                } else if (poopBar.isRed()) {
-                    PoopSound.play();
-                    player.triggerSpeedBoost(1.35, 10);
-                    poopBar.reset();
-                }
-            }
+        // --- modular toilet action ---
+        if (settingsMenu.isToiletSystemEnabled() && controller.isXPressed()) {
+            toiletHandler.handleToiletAction(player);
         }
 
         monsterSpawner.updateMonsters(happyFx);
@@ -182,6 +170,7 @@ public class Game extends JPanel implements Runnable {
         poopBar = new PoopBar();
         speedFx = new SpeedEffectVFX();
         speedFXSystem = new SpeedFXSystem();
+        toiletHandler = new ToiletActionHandler(poopBar, speedFx, speedFXSystem, toilets);
 
         ImageLoader loader = new ImageLoader();
         ImageLoader.MonsterImagePool monsterPool = loader.setupMonsterImages(TILE);
