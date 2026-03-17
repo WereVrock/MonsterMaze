@@ -3,11 +3,11 @@ package wv.monstermaze.main;
 public class ToiletActionHandler {
 
     private PoopBar poopBar;
-    private SpeedEffectVFX speedFx;
+    private SpeedParticles speedFx;
     private SpeedFXSystem speedFXSystem;
     private ToiletManager toilets;
 
-    public ToiletActionHandler(PoopBar poopBar, SpeedEffectVFX speedFx, SpeedFXSystem speedFXSystem, ToiletManager toilets) {
+    public ToiletActionHandler(PoopBar poopBar, SpeedParticles speedFx, SpeedFXSystem speedFXSystem, ToiletManager toilets) {
         this.poopBar = poopBar;
         this.speedFx = speedFx;
         this.speedFXSystem = speedFXSystem;

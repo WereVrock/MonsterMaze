@@ -34,7 +34,7 @@ public class Game extends JPanel implements Runnable {
 
     private ToiletManager toilets = new ToiletManager();
     private PoopBar poopBar = new PoopBar();
-    private SpeedEffectVFX speedFx = new SpeedEffectVFX();
+    private SpeedParticles speedFx = new SpeedParticles();
     private SpeedFXSystem speedFXSystem = new SpeedFXSystem();
     private ToiletActionHandler toiletHandler;
 
@@ -168,7 +168,7 @@ public class Game extends JPanel implements Runnable {
         happyFx = new HappyBumpEffect();
         toilets = new ToiletManager();
         poopBar = new PoopBar();
-        speedFx = new SpeedEffectVFX();
+        speedFx = new SpeedParticles();
         speedFXSystem = new SpeedFXSystem();
         toiletHandler = new ToiletActionHandler(poopBar, speedFx, speedFXSystem, toilets);
 
