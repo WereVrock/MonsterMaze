@@ -50,14 +50,12 @@ public class Game extends JPanel implements Runnable {
 
         ImageLoader loader = new ImageLoader();
 
-        // --- load player images ---
         List<ImageLoader.LoadedImage> loadedPlayers = loader.loadImages("player", TILE);
         playerImages = new ArrayList<>();
         for (ImageLoader.LoadedImage li : loadedPlayers) playerImages.add(li.image);
 
         if (!playerImages.isEmpty()) playerImg = playerImages.get(0);
 
-        // --- load monster images through centralized loader ---
         ImageLoader.MonsterImagePool monsterPool = loader.setupMonsterImages(TILE);
         monsterSpawner = new MonsterSpawner(this, monsterPool);
 
@@ -66,7 +64,6 @@ public class Game extends JPanel implements Runnable {
 
         camera = new Camera(this, WIDTH, HEIGHT, TILE);
 
-        // --- initialize modular toilet handler ---
         toiletHandler = new ToiletActionHandler(poopBar, speedParticles, speedFXSystem, toilets);
 
         new Thread(this).start();
@@ -121,7 +118,6 @@ public class Game extends JPanel implements Runnable {
         maze.ensureArea(player.x, player.y);
         updateVisibleTiles();
 
-        // --- modular toilet action ---
         if (settingsMenu.isToiletSystemEnabled() && controller.isXPressed()) {
             toiletHandler.handleToiletAction(player);
         }
@@ -133,64 +129,62 @@ public class Game extends JPanel implements Runnable {
     }
 
     private void updatePlayerMovement() {
-    if (player.isFrozen()) return;
+        if (player.isFrozen()) return;
 
-    double lx = controller.getLX();
-    double ly = -controller.getLY();
+        double lx = controller.getLX();
+        double ly = -controller.getLY();
 
-    if (Math.abs(lx) < 0.15) lx = 0;
-    if (Math.abs(ly) < 0.15) ly = 0;
+        if (Math.abs(lx) < 0.15) lx = 0;
+        if (Math.abs(ly) < 0.15) ly = 0;
 
-    double len = Math.sqrt(lx * lx + ly * ly);
-    if (len > 1) { lx /= len; ly /= len; }
+        double len = Math.sqrt(lx * lx + ly * ly);
+        if (len > 1) { lx /= len; ly /= len; }
 
-    double speed = 4 * player.getSpeedMultiplier();
-    double dx = lx * speed;
-    double dy = ly * speed;
+        double speed = 4 * player.getSpeedMultiplier();
+        double dx = lx * speed;
+        double dy = ly * speed;
 
-    Rectangle nextPos = player.getBounds(player.x + dx, player.y + dy);
-    boolean collided = maze.isColliding(nextPos);
+        Rectangle nextPos = player.getBounds(player.x + dx, player.y + dy);
+        boolean collided = maze.isColliding(nextPos);
 
-    if (!collided) {
-        player.x += dx;
-        player.y += dy;
-    } else {
-        // check individual axis collisions
-        Rectangle nextX = player.getBounds(player.x + dx, player.y);
-        Rectangle nextY = player.getBounds(player.x, player.y + dy);
-
-        boolean collideX = maze.isColliding(nextX);
-        boolean collideY = maze.isColliding(nextY);
-
-        // If boost is active, destroy walls in the collision path
-        if (player.speedBoost.isGreenBoost()) {
-            if (collideX) destroyWallsAlong(nextX);
-            if (collideY) destroyWallsAlong(nextY);
+        if (!collided) {
             player.x += dx;
             player.y += dy;
         } else {
-            if (!collideX) player.x += dx;
-            if (!collideY) player.y += dy;
+            Rectangle nextX = player.getBounds(player.x + dx, player.y);
+            Rectangle nextY = player.getBounds(player.x, player.y + dy);
+
+            boolean collideX = maze.isColliding(nextX);
+            boolean collideY = maze.isColliding(nextY);
+
+            if (player.speedBoost.isGreenBoost()) {
+                if (collideX) destroyWallsAlong(nextX);
+                if (collideY) destroyWallsAlong(nextY);
+                player.x += dx;
+                player.y += dy;
+            } else {
+                if (!collideX) player.x += dx;
+                if (!collideY) player.y += dy;
+            }
         }
+
+        if (settingsMenu.areFootstepsEnabled()) player.checkFootstep();
     }
 
-    if (settingsMenu.areFootstepsEnabled()) player.checkFootstep();
-}
+    private void destroyWallsAlong(Rectangle r) {
+        int startX = (int) Math.floor((double) r.x / Game.TILE);
+        int startY = (int) Math.floor((double) r.y / Game.TILE);
+        int endX = (int) Math.floor((double) (r.x + r.width - 1) / Game.TILE);
+        int endY = (int) Math.floor((double) (r.y + r.height - 1) / Game.TILE);
 
-private void destroyWallsAlong(Rectangle r) {
-    int startX = (int) Math.floor((double) r.x / Game.TILE);
-    int startY = (int) Math.floor((double) r.y / Game.TILE);
-    int endX = (int) Math.floor((double) (r.x + r.width - 1) / Game.TILE);
-    int endY = (int) Math.floor((double) (r.y + r.height - 1) / Game.TILE);
-
-    for (int tx = startX; tx <= endX; tx++) {
-        for (int ty = startY; ty <= endY; ty++) {
-            if (maze.isWallTile(tx, ty)) {
-                maze.removeWall(tx, ty);
+        for (int tx = startX; tx <= endX; tx++) {
+            for (int ty = startY; ty <= endY; ty++) {
+                if (maze.isWallTile(tx, ty)) {
+                    maze.removeWall(tx, ty);
+                }
             }
         }
     }
-}
 
     private void restartToSelection() {
         selectingPlayer = true;
@@ -238,7 +232,9 @@ private void destroyWallsAlong(Rectangle r) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 
-        camera.applyTransform(g2);
+        // 🔥 SNAP CAMERA (fix)
+        int camX = (int)Math.round(camera.getX());
+        int camY = (int)Math.round(camera.getY());
 
         int screenW = getWidth();
         int screenH = getHeight();
@@ -248,33 +244,37 @@ private void destroyWallsAlong(Rectangle r) {
             return;
         }
 
-        int baseTileX = (int)(camera.getX() / TILE);
-        int baseTileY = (int)(camera.getY() / TILE);
+        int baseTileX = camX / TILE;
+        int baseTileY = camY / TILE;
 
         for (int wy = baseTileY - VIEW_PADDING; wy < baseTileY + HEIGHT + VIEW_PADDING; wy++) {
             for (int wx = baseTileX - VIEW_PADDING; wx < baseTileX + WIDTH + VIEW_PADDING; wx++) {
-                int sx = wx * TILE - (int) camera.getX();
-                int sy = wy * TILE - (int) camera.getY();
+
+                int sx = wx * TILE - camX;
+                int sy = wy * TILE - camY;
+
                 g2.setColor(maze.isWallTile(wx, wy) ? Color.DARK_GRAY : Color.GRAY);
-                g2.fillRect(sx, sy, TILE, TILE);
+
+                // 🔥 OVERDRAW FIX
+                g2.fillRect(sx, sy, TILE + 1, TILE + 1);
             }
         }
 
-        if (settingsMenu.isToiletSystemEnabled()) toilets.draw(g2, camera.getX(), camera.getY());
-        monsterSpawner.drawMonsters(g2, camera.getX(), camera.getY());
-        happyFx.draw(g2, camera.getX(), camera.getY());
+        if (settingsMenu.isToiletSystemEnabled()) toilets.draw(g2, camX, camY);
+        monsterSpawner.drawMonsters(g2, camX, camY);
+        happyFx.draw(g2, camX, camY);
 
         if (settingsMenu.isSpeedVfxEnabled()) {
-            
-            speedFXSystem.draw(g2, camera.getX(), camera.getY(), playerImg, player.x, player.y);
-            speedParticles.draw(g2, camera.getX(), camera.getY());
+            speedFXSystem.draw(g2, camX, camY, playerImg, player.x, player.y);
+            speedParticles.draw(g2, camX, camY);
         }
 
         double tilt = 0;
-        if (settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0) tilt = controller.getLX() * 0.22;
+        if (settingsMenu.isSpeedVfxEnabled() && player.getSpeedMultiplier() > 1.0)
+            tilt = controller.getLX() * 0.22;
 
         Graphics2D gPlayer = (Graphics2D) g2.create();
-        gPlayer.translate(player.x - camera.getX(), player.y - camera.getY());
+        gPlayer.translate(player.x - camX, player.y - camY);
         gPlayer.rotate(tilt);
         gPlayer.drawImage(playerImg, -playerImg.getWidth()/2, -playerImg.getHeight()/2, null);
         gPlayer.dispose();
