@@ -18,7 +18,6 @@ public class MonsterSpawner {
     private final DrillWallEffect drillEffect = new DrillWallEffect();
     private final TeleportSwapFX teleportFX = new TeleportSwapFX();
 
-    // NEW
     private final PassiveMonsterSpawner passiveSpawner;
 
     public MonsterSpawner(Game game, ImageLoader.MonsterImagePool pool) {
@@ -42,7 +41,7 @@ public class MonsterSpawner {
 
         detectNewVisibleTiles();
 
-        passiveSpawner.update(); // <-- clean call, no params
+        passiveSpawner.update();
 
         List<Monster> toRemove = new ArrayList<>();
         Player player = game.getPlayer();
@@ -95,7 +94,7 @@ public class MonsterSpawner {
 
     private void trySpawnMonster(Point tile) {
 
-        if ((pool.normal.isEmpty() && pool.misc.isEmpty()) || !monsters.isEmpty())
+        if ((pool.normal.isEmpty() && pool.misc.isEmpty() && pool.vip.isEmpty()) || !monsters.isEmpty())
             return;
 
         if (random.nextDouble() > 0.05)
@@ -115,13 +114,8 @@ public class MonsterSpawner {
         if (dist < Game.TILE * 2)
             return;
 
-        ImageLoader.LoadedImage loaded;
-
-        if (!pool.misc.isEmpty() && random.nextDouble() < 0.2) {
-            loaded = pool.misc.get(random.nextInt(pool.misc.size()));
-        } else {
-            loaded = pool.normal.get(random.nextInt(pool.normal.size()));
-        }
+        ImageLoader.LoadedImage loaded = pool.getRandom(random);
+        if (loaded == null) return;
 
         Monster m = new Monster(tileCenterX, tileCenterY, loaded.image, loaded.vip, game.getSettingsMenu());
         monsters.add(m);

@@ -14,7 +14,7 @@ public class PassiveMonsterSpawner {
     private long lastCheckTime = System.currentTimeMillis();
 
     private static final long INTERVAL_MS = 3000;
-    private static final double SPAWN_CHANCE = 0.25;
+    private static final double SPAWN_CHANCE = 01.25;
 
     private static final int TARGET_DISTANCE = 8;
     private static final int DISTANCE_TOLERANCE = 1;
@@ -61,7 +61,7 @@ public class PassiveMonsterSpawner {
 
         ImageLoader.MonsterImagePool pool = spawner.pool;
 
-        if (pool.normal.isEmpty() && pool.misc.isEmpty())
+        if (pool.normal.isEmpty() && pool.misc.isEmpty() && pool.vip.isEmpty())
             return;
 
         Player player = game.getPlayer();
@@ -71,7 +71,6 @@ public class PassiveMonsterSpawner {
 
         List<Point> candidates = new ArrayList<>();
 
-        // --- scan square around player ---
         int range = TARGET_DISTANCE + DISTANCE_TOLERANCE;
 
         for (int y = playerTileY - range; y <= playerTileY + range; y++) {
@@ -97,13 +96,8 @@ public class PassiveMonsterSpawner {
         double x = spawnTile.x * Game.TILE + Game.TILE / 2.0;
         double y = spawnTile.y * Game.TILE + Game.TILE / 2.0;
 
-        ImageLoader.LoadedImage loaded;
-
-        if (!pool.misc.isEmpty() && random.nextDouble() < 0.2) {
-            loaded = pool.misc.get(random.nextInt(pool.misc.size()));
-        } else {
-            loaded = pool.normal.get(random.nextInt(pool.normal.size()));
-        }
+        ImageLoader.LoadedImage loaded = pool.getRandom(random);
+        if (loaded == null) return;
 
         Monster m = new Monster(x, y, loaded.image, loaded.vip, game.getSettingsMenu());
         spawner.getMonsters().add(m);
