@@ -8,6 +8,7 @@ import wv.monstermaze.fx.SpeedFXSystem;
 import wv.monstermaze.fx.SpeedParticles;
 import wv.monstermaze.images.MonsterImagePool;
 import wv.monstermaze.images.ImageLoader;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -27,6 +28,8 @@ public class Game extends JPanel implements Runnable {
 
     private BufferedImage playerImg;
     private List<BufferedImage> playerImages;
+
+    private MonsterImagePool monsterPool;
     MonsterSpawner monsterSpawner;
 
     private boolean selectingPlayer = true;
@@ -64,10 +67,11 @@ public class Game extends JPanel implements Runnable {
 
         if (!playerImages.isEmpty()) playerImg = playerImages.get(0);
 
-        MonsterImagePool monsterPool = loader.setupMonsterImages(TILE);
+        monsterPool = loader.setupMonsterImages(TILE);
         monsterSpawner = new MonsterSpawner(this, monsterPool);
 
-        selectionManager = new PlayerSelectionManager(playerImages);
+        selectionManager = new PlayerSelectionManager(playerImages, monsterPool);
+
         settingsMenu = new SettingsMenu();
 
         camera = new Camera(this, WIDTH, HEIGHT, TILE);
@@ -109,12 +113,15 @@ public class Game extends JPanel implements Runnable {
             return;
         }
 
-        if (controller.getRightTrigger() > 0.7f) { restartToSelection(); return; }
+        if (controller.getRightTrigger() > 0.7f) {
+            restartToSelection();
+            return;
+        }
 
         if (selectingPlayer) {
             if (selectionManager.updateSelection(controller.getLX(), controller.getLY(), lastInputTime)) {
                 playerSelectionIndex = selectionManager.getSelectionIndex();
-                playerImg = playerImages.get(playerSelectionIndex);
+                playerImg = selectionManager.getSelectedImage();
                 selectingPlayer = false;
             } else {
                 lastInputTime = System.currentTimeMillis();
@@ -196,10 +203,12 @@ public class Game extends JPanel implements Runnable {
 
     private void restartToSelection() {
         selectingPlayer = true;
+
         maze = new MazeGenerator();
         player = new Player(2 * TILE + TILE / 2, 2 * TILE + TILE / 2);
         visibleTiles.clear();
         happyFx = new HappyBumpEffect();
+
         toilets = new ToiletManager();
         poopBar = new PoopBar();
         speedParticles = new SpeedParticles();
@@ -207,8 +216,12 @@ public class Game extends JPanel implements Runnable {
         toiletHandler = new ToiletActionHandler(poopBar, speedParticles, speedFXSystem, toilets);
 
         ImageLoader loader = new ImageLoader();
-        MonsterImagePool monsterPool = loader.setupMonsterImages(TILE);
+        monsterPool = loader.setupMonsterImages(TILE);
         monsterSpawner = new MonsterSpawner(this, monsterPool);
+
+        // 🔥 IMPORTANT: refresh selection with NEW random slot
+        selectionManager = new PlayerSelectionManager(playerImages, monsterPool);
+        selectionManager.refreshRandomSlot();
 
         camera = new Camera(this, WIDTH, HEIGHT, TILE);
     }
@@ -240,7 +253,6 @@ public class Game extends JPanel implements Runnable {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 
-        // 🔥 SNAP CAMERA (fix)
         int camX = (int)Math.round(camera.getX());
         int camY = (int)Math.round(camera.getY());
 
@@ -262,8 +274,6 @@ public class Game extends JPanel implements Runnable {
                 int sy = wy * TILE - camY;
 
                 g2.setColor(maze.isWallTile(wx, wy) ? Color.DARK_GRAY : Color.GRAY);
-
-                // 🔥 OVERDRAW FIX
                 g2.fillRect(sx, sy, TILE + 1, TILE + 1);
             }
         }
