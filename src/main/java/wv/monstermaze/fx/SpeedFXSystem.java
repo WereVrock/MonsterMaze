@@ -1,5 +1,5 @@
 // ===== SpeedFXSystem.java =====
-package wv.monstermaze.main;
+package wv.monstermaze.fx;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;

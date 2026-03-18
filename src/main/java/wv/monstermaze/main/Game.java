@@ -1,5 +1,13 @@
 package wv.monstermaze.main;
 
+import wv.monstermaze.toilet.ToiletManager;
+import wv.monstermaze.toilet.PoopBar;
+import wv.monstermaze.toilet.ToiletActionHandler;
+import wv.monstermaze.fx.HappyBumpEffect;
+import wv.monstermaze.fx.SpeedFXSystem;
+import wv.monstermaze.fx.SpeedParticles;
+import wv.monstermaze.images.MonsterImagePool;
+import wv.monstermaze.images.ImageLoader;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -56,7 +64,7 @@ public class Game extends JPanel implements Runnable {
 
         if (!playerImages.isEmpty()) playerImg = playerImages.get(0);
 
-        ImageLoader.MonsterImagePool monsterPool = loader.setupMonsterImages(TILE);
+        MonsterImagePool monsterPool = loader.setupMonsterImages(TILE);
         monsterSpawner = new MonsterSpawner(this, monsterPool);
 
         selectionManager = new PlayerSelectionManager(playerImages);
@@ -199,7 +207,7 @@ public class Game extends JPanel implements Runnable {
         toiletHandler = new ToiletActionHandler(poopBar, speedParticles, speedFXSystem, toilets);
 
         ImageLoader loader = new ImageLoader();
-        ImageLoader.MonsterImagePool monsterPool = loader.setupMonsterImages(TILE);
+        MonsterImagePool monsterPool = loader.setupMonsterImages(TILE);
         monsterSpawner = new MonsterSpawner(this, monsterPool);
 
         camera = new Camera(this, WIDTH, HEIGHT, TILE);

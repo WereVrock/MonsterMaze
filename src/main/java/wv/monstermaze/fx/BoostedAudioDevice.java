@@ -1,4 +1,4 @@
-package wv.monstermaze.main;
+package wv.monstermaze.fx;
 
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.JavaSoundAudioDevice;

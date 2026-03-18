@@ -1,5 +1,6 @@
-package wv.monstermaze.main;
+package wv.monstermaze.toilet;
 
+import wv.monstermaze.fx.ToiletAlertSound;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;

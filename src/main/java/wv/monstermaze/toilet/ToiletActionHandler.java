@@ -1,4 +1,10 @@
-package wv.monstermaze.main;
+package wv.monstermaze.toilet;
+
+import wv.monstermaze.fx.SpeedFXSystem;
+import wv.monstermaze.fx.PoopSound;
+import wv.monstermaze.fx.SpeedParticles;
+import wv.monstermaze.main.Player;
+import wv.monstermaze.main.SpeedBoost;
 
 public class ToiletActionHandler {
 

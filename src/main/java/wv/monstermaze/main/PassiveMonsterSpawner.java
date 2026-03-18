@@ -1,5 +1,7 @@
 package wv.monstermaze.main;
 
+import wv.monstermaze.images.MonsterImagePool;
+import wv.monstermaze.images.ImageLoader;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,7 +61,7 @@ public class PassiveMonsterSpawner {
 
     private void spawnAtDistance() {
 
-        ImageLoader.MonsterImagePool pool = spawner.pool;
+        MonsterImagePool pool = spawner.pool;
 
         if (pool.normal.isEmpty() && pool.misc.isEmpty() && pool.vip.isEmpty())
             return;

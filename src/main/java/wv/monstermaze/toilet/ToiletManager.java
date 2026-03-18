@@ -1,9 +1,13 @@
-package wv.monstermaze.main;
+package wv.monstermaze.toilet;
 
+import wv.monstermaze.images.ImageLoader;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
+import wv.monstermaze.main.Game;
+import wv.monstermaze.main.MazeGenerator;
+import wv.monstermaze.main.Player;
 
 public class ToiletManager {
 

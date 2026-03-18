@@ -1,4 +1,4 @@
-package wv.monstermaze.main;
+package wv.monstermaze.fx;
 
 import java.io.InputStream;
 import java.util.Random;

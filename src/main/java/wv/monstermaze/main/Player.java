@@ -1,5 +1,7 @@
 package wv.monstermaze.main;
 
+import wv.monstermaze.fx.FootstepSound;
+import wv.monstermaze.fx.SpeedWooshSound;
 import java.awt.Rectangle;
 
 public class Player {

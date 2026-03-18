@@ -1,5 +1,11 @@
 package wv.monstermaze.main;
 
+import wv.monstermaze.fx.HappyBumpEffect;
+import wv.monstermaze.fx.DrillWallEffect;
+import wv.monstermaze.fx.TeleportSound;
+import wv.monstermaze.fx.TeleportSwapFX;
+import wv.monstermaze.images.MonsterImagePool;
+import wv.monstermaze.images.ImageLoader;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +15,7 @@ import java.util.Set;
 public class MonsterSpawner {
 
     final Game game;
-    final ImageLoader.MonsterImagePool pool;
+    final MonsterImagePool pool;
     private final Random random = new Random();
     private final List<Monster> monsters = new ArrayList<>();
     private final double DESPAWN_DISTANCE;
@@ -20,7 +26,7 @@ public class MonsterSpawner {
 
     private final PassiveMonsterSpawner passiveSpawner;
 
-    public MonsterSpawner(Game game, ImageLoader.MonsterImagePool pool) {
+    public MonsterSpawner(Game game, MonsterImagePool pool) {
         this.game = game;
         this.pool = pool;
         this.DESPAWN_DISTANCE = Game.TILE * Game.WIDTH * 1.5;

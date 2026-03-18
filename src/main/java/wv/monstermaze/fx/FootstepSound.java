@@ -1,4 +1,4 @@
-package wv.monstermaze.main;
+package wv.monstermaze.fx;
 
 import javax.sound.sampled.*;
 import java.util.Random;

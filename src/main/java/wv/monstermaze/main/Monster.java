@@ -1,5 +1,6 @@
 package wv.monstermaze.main;
 
+import wv.monstermaze.fx.FootstepSound;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
