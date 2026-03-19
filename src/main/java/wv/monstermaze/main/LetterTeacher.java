@@ -3,18 +3,17 @@ package wv.monstermaze.main;
 import javax.sound.sampled.*;
 import java.awt.*;
 import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Locale;
 
 public class LetterTeacher {
 
-    private static final Set<Character> allowedLetters = new HashSet<>();
+    private static String allowedLetters = "D"; // Editable single string
 
     private static char currentLetter;
     private static boolean active = false;
 
     private static long startTime;
-    private static final long DURATION = 2500; // ms
+    private static final long DURATION = 2500;
 
     private static float alpha = 0f;
     private static float scale = 0f;
@@ -22,19 +21,24 @@ public class LetterTeacher {
     private static final String SOUND_DIR =
             "C:\\Users\\SC\\Documents\\NetBeansProjects\\MonsterMaze\\src\\main\\resources\\letterSounds";
 
-    static {
-        // Allowed letters (edit freely)
-        for (char c = 'A'; c <= 'Z'; c++) {
-            allowedLetters.add(c);
-        }
+    private static final Locale TR = new Locale("tr", "TR");
+
+    // Cached font (reused)
+    private static Font cachedFont = new Font("Arial", Font.BOLD, 100);
+    private static int lastFontSize = -1;
+
+    public static void setAllowedLetters(String letters) {
+        if (letters == null) return;
+        allowedLetters = letters.toUpperCase(TR);
     }
 
     public static void trigger(String word) {
         if (word == null || word.isEmpty()) return;
 
-        char first = Character.toUpperCase(word.charAt(0));
+        String upper = word.toUpperCase(TR);
+        char first = upper.charAt(0);
 
-        if (!allowedLetters.contains(first)) return;
+//        if (allowedLetters.indexOf(first) == -1) return;
 
         currentLetter = first;
         startTime = System.currentTimeMillis();
@@ -68,61 +72,59 @@ public class LetterTeacher {
             return;
         }
 
-        // === Animation curves ===
-
-        // Fade in/out
+        // Fade
         if (t < 0.2f) alpha = t / 0.2f;
         else if (t > 0.8f) alpha = (1f - t) / 0.2f;
         else alpha = 1f;
 
-        // Punchy scale (pop effect)
+        // Scale (pop)
         scale = (float)(1.0 + Math.sin(t * Math.PI * 2) * 0.2);
 
-        // Base size
         int baseSize = (int)(screenH * 0.5 * scale);
+
+        // Font caching
+        if (baseSize != lastFontSize) {
+            cachedFont = new Font("Arial", Font.BOLD, baseSize);
+            lastFontSize = baseSize;
+        }
 
         String text = String.valueOf(currentLetter);
 
         Graphics2D g2 = (Graphics2D) g.create();
-
         g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-
-        // Center
-        int cx = screenW / 2;
-        int cy = screenH / 2;
-
-        // Font
-        Font font = new Font("Arial", Font.BOLD, baseSize);
-        g2.setFont(font);
+        g2.setFont(cachedFont);
 
         FontMetrics fm = g2.getFontMetrics();
         int textW = fm.stringWidth(text);
         int textH = fm.getAscent();
 
-        int x = cx - textW / 2;
-        int y = cy + textH / 2;
+        int x = (screenW - textW) / 2;
+        int y = (screenH + textH) / 2;
 
-        // === Glow effect ===
+        // === Optimized Glow (reduced from ~80 draws to 8) ===
         g2.setColor(new Color(255, 255, 0, (int)(alpha * 80)));
-        for (int i = 0; i < 20; i++) {
-            int spread = i * 2;
-            g2.drawString(text, x - spread, y - spread);
-            g2.drawString(text, x + spread, y + spread);
-            g2.drawString(text, x - spread, y + spread);
-            g2.drawString(text, x + spread, y - spread);
-        }
+        int glow = 8;
+        g2.drawString(text, x - glow, y);
+        g2.drawString(text, x + glow, y);
+        g2.drawString(text, x, y - glow);
+        g2.drawString(text, x, y + glow);
+        g2.drawString(text, x - glow, y - glow);
+        g2.drawString(text, x + glow, y - glow);
+        g2.drawString(text, x - glow, y + glow);
+        g2.drawString(text, x + glow, y + glow);
 
-        // === Outline ===
+        // === Optimized Outline (diamond instead of circle) ===
         g2.setColor(Color.BLACK);
-        for (int dx = -6; dx <= 6; dx++) {
-            for (int dy = -6; dy <= 6; dy++) {
-                if (dx * dx + dy * dy < 36) {
+        int outline = 4;
+        for (int dx = -outline; dx <= outline; dx++) {
+            for (int dy = -outline; dy <= outline; dy++) {
+                if (Math.abs(dx) + Math.abs(dy) <= outline) {
                     g2.drawString(text, x + dx, y + dy);
                 }
             }
         }
 
-        // === Main Letter ===
+        // Main
         g2.setColor(Color.WHITE);
         g2.drawString(text, x, y);
 

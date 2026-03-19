@@ -96,8 +96,8 @@ public class HappyBumpEffect {
 
     public void draw(Graphics2D g2, double cameraX, double cameraY) {
 
-        for (Particle p : particles) {
-
+        for (int i = 0; i <   particles.size();i++) {
+Particle p  =particles.get(i);
             int sx = (int) (p.x - cameraX);
             int sy = (int) (p.y - cameraY);
 
