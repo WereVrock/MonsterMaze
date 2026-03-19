@@ -83,8 +83,8 @@ public class SpeedParticles {
 
     public void draw(Graphics2D g,double camX,double camY){
 
-        for(Particle p:particles){
-
+        for (int i = 0; i < particles.size(); i++) {
+    Particle p = particles.get(i);
             int sx = (int)(p.x - camX);
             int sy = (int)(p.y - camY);
 

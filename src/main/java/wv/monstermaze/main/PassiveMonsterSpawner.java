@@ -101,7 +101,7 @@ public class PassiveMonsterSpawner {
         ImageLoader.LoadedImage loaded = pool.getRandom(random);
         if (loaded == null) return;
 
-        Monster m = new Monster(x, y, loaded.image, loaded.vip, game.getSettingsMenu());
+        Monster m = new Monster(x, y, loaded.image, loaded.vip, game.getSettingsMenu(),loaded.name);
         spawner.getMonsters().add(m);
     }
 }

@@ -14,10 +14,12 @@ public class ImageLoader {
     public static class LoadedImage {
         public final BufferedImage image;
         public final boolean vip;
+        public final String name;
 
-        public LoadedImage(BufferedImage image, boolean vip) {
+        public LoadedImage(BufferedImage image, boolean vip,String name) {
             this.image = image;
             this.vip = vip;
+            this.name=name;
         }
     }
 
@@ -47,7 +49,7 @@ public class ImageLoader {
                         if (!f.isFile()) continue;
                         BufferedImage img = ImageIO.read(f);
                         if (img != null) {
-                            targetList.add(new LoadedImage(scaleImage(img, tileSize, tileSize), vip));
+                            targetList.add(new LoadedImage(scaleImage(img, tileSize, tileSize), vip,f.getName()));
                             System.out.println("Loaded " + subfolderName + " image: " + f.getName() + (vip ? " [VIP]" : ""));
                         }
                     } catch (Exception e) {
@@ -67,7 +69,7 @@ public class ImageLoader {
                         if (!f.isFile()) continue;
                         BufferedImage img = ImageIO.read(f);
                         if (img != null) {
-                            targetList.add(new LoadedImage(scaleImage(img, tileSize, tileSize), vip));
+                            targetList.add(new LoadedImage(scaleImage(img, tileSize, tileSize), vip,f.getName()));
                             System.out.println("Loaded folder image: " + f.getName() + (vip ? " [VIP]" : ""));
                         }
                     } catch (Exception e) {

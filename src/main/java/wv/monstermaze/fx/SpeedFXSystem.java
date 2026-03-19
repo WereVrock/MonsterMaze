@@ -14,10 +14,10 @@ public class SpeedFXSystem {
         double y;
         int life;
 
-        AfterImage(double x,double y){
-            this.x=x;
-            this.y=y;
-            this.life=20;
+        AfterImage(double x, double y) {
+            this.x = x;
+            this.y = y;
+            this.life = 20;
         }
     }
 
@@ -29,12 +29,12 @@ public class SpeedFXSystem {
         double vy;
         int life;
 
-        SpeedLine(double x,double y,double vx,double vy){
-            this.x=x;
-            this.y=y;
-            this.vx=vx;
-            this.vy=vy;
-            this.life=20;
+        SpeedLine(double x, double y, double vx, double vy) {
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.life = 20;
         }
     }
 
@@ -46,12 +46,12 @@ public class SpeedFXSystem {
         double vy;
         int life;
 
-        Dust(double x,double y,double vx,double vy){
-            this.x=x;
-            this.y=y;
-            this.vx=vx;
-            this.vy=vy;
-            this.life=18;
+        Dust(double x, double y, double vx, double vy) {
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.life = 18;
         }
     }
 
@@ -70,7 +70,7 @@ public class SpeedFXSystem {
 
     private Random rand = new Random();
 
-    public void triggerBoost(double x,double y){
+    public void triggerBoost(double x, double y) {
 
         Shockwave s = new Shockwave();
         s.x = x;
@@ -78,57 +78,59 @@ public class SpeedFXSystem {
 
         waves.add(s);
 
-        for(int i=0;i<12;i++){
+        for (int i = 0; i < 12; i++) {
 
-            double angle = rand.nextDouble()*Math.PI*2;
-            double speed = 2 + rand.nextDouble()*2;
+            double angle = rand.nextDouble() * Math.PI * 2;
+            double speed = 2 + rand.nextDouble() * 2;
 
-            double vx = Math.cos(angle)*speed;
-            double vy = Math.sin(angle)*speed;
+            double vx = Math.cos(angle) * speed;
+            double vy = Math.sin(angle) * speed;
 
-            dust.add(new Dust(x,y,vx,vy));
+            dust.add(new Dust(x, y, vx, vy));
         }
     }
 
-    public void spawnSpeedEffects(double x,double y,double speedMult){
+    public void spawnSpeedEffects(double x, double y, double speedMult) {
 
-        if(speedMult <= 1.0) return;
+        if (speedMult <= 1.0) {
+            return;
+        }
 
-        ghosts.add(new AfterImage(x,y));
+        ghosts.add(new AfterImage(x, y));
 
-        double angle = rand.nextDouble()*Math.PI*2;
+        double angle = rand.nextDouble() * Math.PI * 2;
 
         double vx = Math.cos(angle) * -6;
         double vy = Math.sin(angle) * -6;
 
-        lines.add(new SpeedLine(x,y,vx,vy));
+        lines.add(new SpeedLine(x, y, vx, vy));
 
-        if(rand.nextDouble() < 0.4){
+        if (rand.nextDouble() < 0.4) {
 
-            double dvx = (rand.nextDouble()-0.5)*2;
-            double dvy = (rand.nextDouble()-0.5)*2;
+            double dvx = (rand.nextDouble() - 0.5) * 2;
+            double dvy = (rand.nextDouble() - 0.5) * 2;
 
-            dust.add(new Dust(x,y,dvx,dvy));
+            dust.add(new Dust(x, y, dvx, dvy));
         }
     }
 
-    public void update(){
+    public void update() {
 
         Iterator<AfterImage> gi = ghosts.iterator();
 
-        while(gi.hasNext()){
+        while (gi.hasNext()) {
 
             AfterImage g = gi.next();
             g.life--;
 
-            if(g.life <= 0){
+            if (g.life <= 0) {
                 gi.remove();
             }
         }
 
         Iterator<SpeedLine> li = lines.iterator();
 
-        while(li.hasNext()){
+        while (li.hasNext()) {
 
             SpeedLine l = li.next();
 
@@ -137,14 +139,14 @@ public class SpeedFXSystem {
 
             l.life--;
 
-            if(l.life <= 0){
+            if (l.life <= 0) {
                 li.remove();
             }
         }
 
         Iterator<Dust> di = dust.iterator();
 
-        while(di.hasNext()){
+        while (di.hasNext()) {
 
             Dust d = di.next();
 
@@ -156,77 +158,79 @@ public class SpeedFXSystem {
 
             d.life--;
 
-            if(d.life <= 0){
+            if (d.life <= 0) {
                 di.remove();
             }
         }
 
         Iterator<Shockwave> wi = waves.iterator();
 
-        while(wi.hasNext()){
+        while (wi.hasNext()) {
 
             Shockwave s = wi.next();
 
             s.radius += 8;
             s.life--;
 
-            if(s.life <= 0){
+            if (s.life <= 0) {
                 wi.remove();
             }
         }
     }
 
-    public void draw(Graphics2D g,double camX,double camY,BufferedImage playerImg,double px,double py){
+    public void draw(Graphics2D g, double camX, double camY, BufferedImage playerImg, double px, double py) {
 
-        for(AfterImage a : ghosts){
+        for (int i = 0; i < ghosts.size(); i++) {
+            AfterImage a = ghosts.get(i);
 
             float alpha = a.life / 20f;
 
             Composite old = g.getComposite();
 
-            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha*0.5f));
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha * 0.5f));
 
-            int sx = (int)(a.x - camX - playerImg.getWidth()/2);
-            int sy = (int)(a.y - camY - playerImg.getHeight()/2);
+            int sx = (int) (a.x - camX - playerImg.getWidth() / 2);
+            int sy = (int) (a.y - camY - playerImg.getHeight() / 2);
 
-            g.drawImage(playerImg,sx,sy,null);
+            g.drawImage(playerImg, sx, sy, null);
 
             g.setComposite(old);
         }
 
         g.setColor(Color.WHITE);
 
-        for(SpeedLine l : lines){
+        for (SpeedLine l : lines) {
 
-            int sx = (int)(l.x - camX);
-            int sy = (int)(l.y - camY);
+            int sx = (int) (l.x - camX);
+            int sy = (int) (l.y - camY);
 
-            int ex = (int)(sx + l.vx*4);
-            int ey = (int)(sy + l.vy*4);
+            int ex = (int) (sx + l.vx * 4);
+            int ey = (int) (sy + l.vy * 4);
 
-            g.drawLine(sx,sy,ex,ey);
+            g.drawLine(sx, sy, ex, ey);
         }
 
-        g.setColor(new Color(200,200,200));
+        g.setColor(new Color(200, 200, 200));
 
-        for(Dust d : dust){
+        for (int i = 0; i < dust.size(); i++) {
+            Dust d = dust.get(i);
 
-            int sx = (int)(d.x - camX);
-            int sy = (int)(d.y - camY);
+            int sx = (int) (d.x - camX);
+            int sy = (int) (d.y - camY);
 
-            g.fillOval(sx-2,sy-2,4,4);
+            g.fillOval(sx - 2, sy - 2, 4, 4);
         }
 
         g.setColor(Color.WHITE);
 
-        for(Shockwave s : waves){
+        for (Shockwave s : waves) {
 
-            int sx = (int)(s.x - camX);
-            int sy = (int)(s.y - camY);
+            int sx = (int) (s.x - camX);
+            int sy = (int) (s.y - camY);
 
-            int r = (int)s.radius;
+            int r = (int) s.radius;
 
-            g.drawOval(sx-r,sy-r,r*2,r*2);
+            g.drawOval(sx - r, sy - r, r * 2, r * 2);
         }
     }
 }

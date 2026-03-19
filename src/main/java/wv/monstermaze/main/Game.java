@@ -259,6 +259,8 @@ public class Game extends JPanel implements Runnable {
 
         if (settingsMenu.isActive())
             settingsMenu.draw(g2, screenW, screenH);
+        
+        LetterTeacher.draw(g2, getWidth(), getHeight());
     }
 
     public Player getPlayer() { return player; }

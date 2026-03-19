@@ -16,6 +16,7 @@ public class Monster {
     private double lastFootstepX, lastFootstepY;
     private final SettingsMenu settingsMenu;
     public boolean vip = false;
+    public  final String name;
 
     private static final double STICK_THRESHOLD = 0.2;
     private boolean flipped = false;
@@ -30,11 +31,12 @@ public class Monster {
 
     private final Random random = new Random();
 
-    public Monster(double x, double y, BufferedImage img, boolean vip, SettingsMenu settingsMenu) {
+    public Monster(double x, double y, BufferedImage img, boolean vip, SettingsMenu settingsMenu,String name) {
         this.x = x;
         this.y = y;
         this.img = img;
         this.vip = vip;
+        this.name=name;
         this.settingsMenu = settingsMenu;
 
         this.targetTileX = (int) (x / Game.TILE);

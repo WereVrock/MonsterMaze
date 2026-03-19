@@ -60,6 +60,7 @@ public class MonsterSpawner {
 
             if (distanceToPlayer < 32) {
                 happyFx.trigger(m.getX(), m.getY());
+                LetterTeacher.trigger(m.name);
                 toRemove.add(m);
                 continue;
             }
@@ -123,7 +124,7 @@ public class MonsterSpawner {
         ImageLoader.LoadedImage loaded = pool.getRandom(random);
         if (loaded == null) return;
 
-        Monster m = new Monster(tileCenterX, tileCenterY, loaded.image, loaded.vip, game.getSettingsMenu());
+        Monster m = new Monster(tileCenterX, tileCenterY, loaded.image, loaded.vip, game.getSettingsMenu(),loaded.name);
         monsters.add(m);
     }
 }
